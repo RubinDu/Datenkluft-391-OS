@@ -106,3 +106,7 @@ _idt:
     .endr
 
 idt_bottom:
+
+gdt_desc:
+    .word gdt_bottom - gdt - 1
+    .long gdt

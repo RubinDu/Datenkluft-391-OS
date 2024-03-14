@@ -47,6 +47,19 @@ int idt_test(){
 
 // add more tests here
 
+int EXP0_test(){
+	TEST_HEADER;
+	int a = 1, b = 0;
+    a = a / b;
+    return a;
+}
+
+int systemcall_test(){
+	TEST_HEADER;
+	__asm__("int	$0x80");
+	return 0;
+}
+
 /* Checkpoint 2 tests */
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
@@ -56,5 +69,9 @@ int idt_test(){
 /* Test suite entry point */
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
+	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
+	TEST_OUTPUT("System call test", systemcall_test());
+	while (1);
+	
 	// launch your tests here
 }
