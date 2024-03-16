@@ -1,6 +1,9 @@
 #include "tests.h"
 #include "x86_desc.h"
 #include "lib.h"
+#include "types.h"
+#include "rtc.h"
+#include "keyboard.h"
 
 #define PASS 1
 #define FAIL 0
@@ -60,6 +63,24 @@ int systemcall_test(){
 	return 0;
 }
 
+int rtc_test() {
+	TEST_HEADER;
+
+	int i, rtc_freq=2;
+	while (rtc_freq <= 1024) {
+		write_rtc(0, &rtc_freq, 4);
+		for (i = 0; i < rtc_freq; i++) {
+			read_rtc(0, NULL, 0);
+			printf("A");
+		}
+		
+		printf("\n");
+		rtc_freq *= 2;
+	}
+
+	return PASS;
+}
+
 /* Checkpoint 2 tests */
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
@@ -74,4 +95,5 @@ void launch_tests(){
 	while (1);
 	
 	// launch your tests here
+	TEST_OUTPUT("rtc_test", rtc_test());
 }
