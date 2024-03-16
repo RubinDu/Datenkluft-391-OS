@@ -1,3 +1,5 @@
+#ifndef IDT_H
+#define IDT_H
 
 #define IDT_SIZE 0x100
 #define EXCEPTION_SIZE 0x14
@@ -27,3 +29,4 @@ void systemcall_blank();
 
 extern void idt_init();
 
+#endif
