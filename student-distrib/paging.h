@@ -4,7 +4,7 @@
 #include "types.h"
 #include "x86_desc.h"
 
-#define PAGING_FLAG 0x80000000
+#define PAGING_FLAG 0x80000001
 #define PAGING_SIZE_EXTENTION_FLAG 0x00000010
 
 #define PDE_OFFSET 22

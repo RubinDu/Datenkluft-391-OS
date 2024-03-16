@@ -57,7 +57,12 @@ int EXP0_test(){
 int systemcall_test(){
 	TEST_HEADER;
 	__asm__("int	$0x80");
-	return 0;
+	return FAIL;
+}
+
+int paging_test(int *ptr){
+	TEST_HEADER;
+	return *ptr;
 }
 
 /* Checkpoint 2 tests */
@@ -70,8 +75,9 @@ int systemcall_test(){
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
 	// TEST_OUTPUT("Div by 0 exception test", EXP0_test());
-	TEST_OUTPUT("Random access test", *((uint32_t*)0xABCDE391));
-	TEST_OUTPUT("System call test", systemcall_test());
+	//TEST_OUTPUT("System call test", systemcall_test());
+	//TEST_OUTPUT("Valid pointer test", paging_test(0x400000));
+	TEST_OUTPUT("Invalid pointer test", paging_test(0x3FFFFF));
 	
 	while (1);
 	

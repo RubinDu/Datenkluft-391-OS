@@ -1,8 +1,8 @@
 #include "paging.h"
 #include "lib.h"
 
-pde_t page_directory[PAGE_DIRECTORY_COUNT] __attribute__((aligned(PAGE_DIRECTORY_COUNT)));
-pte_t page_table[PAGE_TABLE_COUNT] __attribute__((aligned(PAGE_TABLE_COUNT)));
+pde_t page_directory[PAGE_DIRECTORY_COUNT] __attribute__((aligned(PAGE_DIRECTORY_COUNT*sizeof(pde_t))));
+pte_t page_table[PAGE_TABLE_COUNT] __attribute__((aligned(PAGE_TABLE_COUNT*sizeof(pte_t))));
 
 /**
  * void init_paging();

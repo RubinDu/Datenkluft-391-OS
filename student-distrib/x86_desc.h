@@ -22,8 +22,8 @@
 /* Number of vectors in the interrupt descriptor table (IDT) */
 #define NUM_VEC     256
 
-#define PAGE_DIRECTORY_COUNT (1 << 12)
-#define PAGE_TABLE_COUNT (1 << 12)
+#define PAGE_DIRECTORY_COUNT (1 << 10)
+#define PAGE_TABLE_COUNT (1 << 10)
 
 #ifndef ASM
 
