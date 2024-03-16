@@ -69,8 +69,10 @@ int systemcall_test(){
 /* Test suite entry point */
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
-	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
+	// TEST_OUTPUT("Div by 0 exception test", EXP0_test());
+	TEST_OUTPUT("Random access test", *((uint32_t*)0xABCDE391));
 	TEST_OUTPUT("System call test", systemcall_test());
+	
 	while (1);
 	
 	// launch your tests here

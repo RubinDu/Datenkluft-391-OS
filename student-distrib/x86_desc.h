@@ -22,6 +22,9 @@
 /* Number of vectors in the interrupt descriptor table (IDT) */
 #define NUM_VEC     256
 
+#define PAGE_DIRECTORY_COUNT (1 << 12)
+#define PAGE_TABLE_COUNT (1 << 12)
+
 #ifndef ASM
 
 /* This structure is used to load descriptor base registers
@@ -166,6 +169,58 @@ typedef union idt_desc_t {
 extern idt_desc_t idt[NUM_VEC];
 /* The descriptor used to load the IDTR */
 extern x86_desc_t idt_desc_ptr;
+
+typedef union {
+    uint32_t val;
+    union {
+        struct {
+            uint32_t present: 1;
+            uint32_t read_write: 1;
+            uint32_t user_supervisor: 1;
+            uint32_t write_through: 1;
+            uint32_t cache_disabled: 1;
+            uint32_t accessed: 1;
+            uint32_t reserved: 1;
+            uint32_t page_size: 1;
+            uint32_t global: 1;
+            uint32_t available: 3;
+            uint32_t page_table_base_address: 20;
+        } KB __attribute__((packed));
+
+        struct {
+            uint32_t present: 1;
+            uint32_t read_write: 1;
+            uint32_t user_supervisor: 1;
+            uint32_t write_through: 1;
+            uint32_t cache_disabled: 1;
+            uint32_t accessed: 1;
+            uint32_t dirty: 1;
+            uint32_t page_size: 1;
+            uint32_t global: 1;
+            uint32_t available: 3;
+            uint32_t page_table_attribute_index: 1;
+            uint32_t reserved: 9;
+            uint32_t page_base_address: 10;
+        } MB __attribute__((packed));
+    };
+} pde_t;
+
+typedef union pte_t {
+    uint32_t val;
+    struct {
+        uint32_t present : 1;
+        uint32_t read_write : 1;
+        uint32_t user_supervisor : 1;
+        uint32_t write_through : 1;
+        uint32_t cache_disabled : 1;
+        uint32_t accessed : 1;
+        uint32_t dirty : 1;
+        uint32_t page_table_attribute_index : 1;
+        uint32_t global : 1;
+        uint32_t available : 3;
+        uint32_t page_base_address : 20;
+    } __attribute__((packed));
+} pte_t;
 
 /* Sets runtime parameters for an IDT entry */
 #define SET_IDT_ENTRY(str, handler)                              \
