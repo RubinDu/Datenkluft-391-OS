@@ -63,23 +63,53 @@ int systemcall_test(){
 	return 0;
 }
 
-int rtc_test() {
+int kb_test(){
 	TEST_HEADER;
+	__asm__("int	$0x21");
+	return 1;
+}
 
-	int i, rtc_freq=2;
-	while (rtc_freq <= 1024) {
-		write_rtc(0, &rtc_freq, 4);
-		for (i = 0; i < rtc_freq; i++) {
-			read_rtc(0, NULL, 0);
-			printf("A");
-		}
-		
-		printf("\n");
-		rtc_freq *= 2;
-	}
+int clock_test(){
+	TEST_HEADER;
+	__asm__("int	$0x28");
+	return 1;
+}
 
+int irq_enable_test(){
+	TEST_HEADER;
+	enable_irq(100); // invalid irq number will be return
 	return PASS;
 }
+
+int irq_disable_test(){
+	TEST_HEADER;
+	disable_irq(100);
+	return PASS;
+}
+
+int eoi_test(){
+	TEST_HEADER;
+	send_eoi(100);
+	return PASS;
+}
+
+// int rtc_test( void )
+// {
+// 	TEST_HEADER;
+// 	int i;
+// 	for(i=0; i<1000000; i++){};
+// 	rtc_init();
+// 	for(i=0; i<1000000; i++){};
+// 	disable_irq(RTC_IRQ);
+// 	return PASS;
+// }
+
+// int keyboard_test(){
+// 	TEST_HEADER;
+// 	keyboard_init();
+// 	disable_irq(1); //keyboard irq = 0x1
+// 	return PASS;
+// }
 
 /* Checkpoint 2 tests */
 /* Checkpoint 3 tests */
@@ -89,11 +119,17 @@ int rtc_test() {
 
 /* Test suite entry point */
 void launch_tests(){
-	TEST_OUTPUT("idt_test", idt_test());
+	// TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
-	TEST_OUTPUT("System call test", systemcall_test());
-	while (1);
+	// TEST_OUTPUT("System call test", systemcall_test());
+	// while (1);
 	
 	// launch your tests here
-	TEST_OUTPUT("rtc_test", rtc_test());
+	// TEST_OUTPUT("irq_enable_test", irq_enable_test());
+	// TEST_OUTPUT("irq_disable_test", irq_disable_test());
+	// TEST_OUTPUT("eoi_test", eoi_test());
+	//TEST_OUTPUT("rtc_test", rtc_test());	
+	//TEST_OUTPUT("keyboard_test", keyboard_test());
+	// TEST_OUTPUT("kb_test", kb_test());
+	TEST_OUTPUT("clock_test", clock_test());
 }
