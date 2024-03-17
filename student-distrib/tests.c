@@ -37,7 +37,7 @@ int idt_test(){
 
 	int i;
 	int result = PASS;
-	for (i = 0; i < 10; ++i){
+	for (i = 0; i < 20; ++i){
 		if ((idt[i].offset_15_00 == NULL) && 
 			(idt[i].offset_31_16 == NULL)){
 			assertion_failure();
@@ -60,7 +60,12 @@ int EXP0_test(){
 int systemcall_test(){
 	TEST_HEADER;
 	__asm__("int	$0x80");
-	return 0;
+	return FAIL;
+}
+
+int paging_test(int *ptr){
+	TEST_HEADER;
+	return *ptr;
 }
 
 int kb_test(){
@@ -119,10 +124,13 @@ int eoi_test(){
 
 /* Test suite entry point */
 void launch_tests(){
-	// TEST_OUTPUT("idt_test", idt_test());
-	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
-	// TEST_OUTPUT("System call test", systemcall_test());
-	// while (1);
+	TEST_OUTPUT("idt_test", idt_test());
+	// TEST_OUTPUT("Div by 0 exception test", EXP0_test());
+	//TEST_OUTPUT("System call test", systemcall_test());
+	//TEST_OUTPUT("Valid pointer test", paging_test(0x400000));
+	TEST_OUTPUT("Invalid pointer test", paging_test(0x3FFFFF));
+	
+	while (1);
 	
 	// launch your tests here
 	// TEST_OUTPUT("irq_enable_test", irq_enable_test());

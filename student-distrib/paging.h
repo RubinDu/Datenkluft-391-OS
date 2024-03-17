@@ -1,0 +1,23 @@
+#ifndef _PAGING_H
+#define _PAGING_H
+
+#include "types.h"
+#include "x86_desc.h"
+
+#define PAGING_FLAG 0x80000001
+#define PAGING_SIZE_EXTENTION_FLAG 0x00000010
+
+#define PDE_OFFSET 22
+#define PTE_OFFSET 12
+
+#define PAGING_PDE_FLAG 0xFFFFF000
+#define PAGING_PTE_FLAG 0xFFC00000
+
+#define KERNEL_ADDR 0x400000
+#define KERNEL_PDE (KERNEL_ADDR >> PDE_OFFSET)
+#define VIDEO_MEMORY_ADDR 0xB8000
+#define VIDEO_MEMORY_PTE (VIDEO_MEMORY_ADDR >> PTE_OFFSET)
+
+void paging_init();
+
+#endif
