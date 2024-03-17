@@ -1,6 +1,9 @@
 #include "tests.h"
 #include "x86_desc.h"
 #include "lib.h"
+#include "types.h"
+#include "rtc.h"
+#include "keyboard.h"
 
 #define PASS 1
 #define FAIL 0
@@ -65,6 +68,54 @@ int paging_test(int *ptr){
 	return *ptr;
 }
 
+int kb_test(){
+	TEST_HEADER;
+	__asm__("int	$0x21");
+	return 1;
+}
+
+int clock_test(){
+	TEST_HEADER;
+	__asm__("int	$0x28");
+	return 1;
+}
+
+int irq_enable_test(){
+	TEST_HEADER;
+	enable_irq(100); // invalid irq number will be return
+	return PASS;
+}
+
+int irq_disable_test(){
+	TEST_HEADER;
+	disable_irq(100);
+	return PASS;
+}
+
+int eoi_test(){
+	TEST_HEADER;
+	send_eoi(100);
+	return PASS;
+}
+
+// int rtc_test( void )
+// {
+// 	TEST_HEADER;
+// 	int i;
+// 	for(i=0; i<1000000; i++){};
+// 	rtc_init();
+// 	for(i=0; i<1000000; i++){};
+// 	disable_irq(RTC_IRQ);
+// 	return PASS;
+// }
+
+// int keyboard_test(){
+// 	TEST_HEADER;
+// 	keyboard_init();
+// 	disable_irq(1); //keyboard irq = 0x1
+// 	return PASS;
+// }
+
 /* Checkpoint 2 tests */
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
@@ -82,4 +133,11 @@ void launch_tests(){
 	while (1);
 	
 	// launch your tests here
+	// TEST_OUTPUT("irq_enable_test", irq_enable_test());
+	// TEST_OUTPUT("irq_disable_test", irq_disable_test());
+	// TEST_OUTPUT("eoi_test", eoi_test());
+	//TEST_OUTPUT("rtc_test", rtc_test());	
+	//TEST_OUTPUT("keyboard_test", keyboard_test());
+	// TEST_OUTPUT("kb_test", kb_test());
+	TEST_OUTPUT("clock_test", clock_test());
 }

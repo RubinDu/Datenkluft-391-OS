@@ -1,6 +1,7 @@
 #include "idt.h"
 #include "x86_desc.h"
 #include "lib.h"
+#include "common_asm_link.h"
 
 typedef void (*exceptions)();
 
@@ -153,7 +154,16 @@ void idt_init(){
             idt[i].dpl = 3;
             SET_IDT_ENTRY(idt[i], systemcall_blank);
         }
-        
+        if (i==0x21){
+            idt[i].present = 1;
+            idt[i].dpl = 0;
+            SET_IDT_ENTRY(idt[i], keyboard_intr);
+        }
+        if (i==0x28){
+            idt[i].present = 1;
+            idt[i].dpl = 0;
+            SET_IDT_ENTRY(idt[i], rtc_intr);
+        }
     }
     lidt(idt_desc_ptr);
 }

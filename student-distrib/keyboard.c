@@ -21,6 +21,7 @@ void keyboard_handler(){
     if (sc<54){
         clear();
         printf("%c", keys[sc]);
+        // printf("keyborad interrupt\n");
     }
     send_eoi(0x1);
 }
