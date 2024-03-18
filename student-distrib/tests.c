@@ -25,7 +25,7 @@ static inline void assertion_failure(){
 
 /* IDT Test - Example
  * 
- * Asserts that first 10 IDT entries are not NULL
+ * Asserts that first 20 IDT entries are not NULL
  * Inputs: None
  * Outputs: PASS/FAIL
  * Side Effects: None
@@ -50,19 +50,46 @@ int idt_test(){
 
 // add more tests here
 
+/* EXP0_test
+ * 
+ * Raise division by 0 exception
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: Freezes the kernel and display exception if success
+ * Coverage: Exceptions
+ * Files: idt.h/c
+ */
 int EXP0_test(){
 	TEST_HEADER;
 	int a = 1, b = 0;
     a = a / b;
-    return a;
+    return FAIL;
 }
 
+/* systemcall_test
+ * 
+ * Raise system call
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: Freezes the kernel and display unimplemented if success
+ * Coverage: System calls
+ * Files: idt.h/c
+ */
 int systemcall_test(){
 	TEST_HEADER;
 	__asm__("int	$0x80");
 	return FAIL;
 }
 
+/* systemcall_test
+ * 
+ * Dereference a pointer to a given memory address
+ * Inputs: a pointer to an address
+ * Outputs: the content of the address pointed by the pointer
+ * Side Effects: If the pointer points to an invalid address, Freezes the kernel and display page fault exception
+ * Coverage: Paging, Exceptions
+ * Files: paging.h/c, idt.h/c
+ */
 int paging_test(int *ptr){
 	TEST_HEADER;
 	return *ptr;
@@ -125,10 +152,10 @@ int eoi_test(){
 /* Test suite entry point */
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
-	// TEST_OUTPUT("Div by 0 exception test", EXP0_test());
+	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
 	//TEST_OUTPUT("System call test", systemcall_test());
 	//TEST_OUTPUT("Valid pointer test", paging_test(0x400000));
-	TEST_OUTPUT("Invalid pointer test", paging_test(0x3FFFFF));
+	//TEST_OUTPUT("Invalid pointer test", paging_test(0x3FFFFF));
 	
 	while (1);
 	
@@ -139,5 +166,5 @@ void launch_tests(){
 	//TEST_OUTPUT("rtc_test", rtc_test());	
 	//TEST_OUTPUT("keyboard_test", keyboard_test());
 	// TEST_OUTPUT("kb_test", kb_test());
-	TEST_OUTPUT("clock_test", clock_test());
+	//TEST_OUTPUT("clock_test", clock_test());
 }

@@ -4,6 +4,8 @@
 .text
 .globl keyboard_intr, rtc_intr
 
+# Keyboard interrupt linkage
+# Masks interrupt flags, saves all, call the corresponding handler, restores all, return from the interrupt
 keyboard_intr:
     cli
     pushfl
@@ -14,6 +16,8 @@ keyboard_intr:
     sti
     iret
 
+# RTC interrupt linkage
+# Masks interrupt flags, saves all, call the corresponding handler, restores all, return from the interrupt
 rtc_intr:
     cli
     pushfl

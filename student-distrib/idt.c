@@ -5,11 +5,19 @@
 
 typedef void (*exceptions)();
 
+/* 
+ * EXPX/systemcall_blank
+ *   DESCRIPTION: Handlers for exceptions and unimplemented system call
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none 
+ *   SIDE EFFECTS: Prints corresponding exception (or unimplemented system call) and freezes the kernel
+ */
 void EXP0(){
-    cli();
-    clear();
-    printf(" Exception: Divide by zero\n");
-    while(1);
+    cli();                                      //masks interrupts
+    clear();                                    //clears the terminal as "blue screen"
+    printf(" Exception: Divide by zero\n");     //prints the exception
+    while(1);                                   //freezes the kernel
 }
 void EXP1(){
     cli();
@@ -125,45 +133,52 @@ void EXP13(){
     printf(" Exception: SIMD Floating-Point Exception\n");
     while(1);
 }
-
 void systemcall_blank(){
     clear();
     printf(" Unimplemented System Call\n");
     while(1);
 }
 
+/* 
+ * idt_init
+ *   DESCRIPTION: Initializes interrupt descripter table
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none 
+ *   SIDE EFFECTS: Fills the entries and loads them into IDT
+ */
 void idt_init(){
     int i;
-    exceptions EXP[20] = {EXP0, EXP1, EXP2, EXP3, EXP4, EXP5, EXP6, EXP7, EXP8, EXP9, EXPA, EXPB, EXPC, EXPD, EXPE, EXPF, EXP10, EXP11, EXP12, EXP13};
-    for (i = 0; i < IDT_SIZE; i++){
-        idt[i].present = 0;
+    exceptions EXP[20] = {EXP0, EXP1, EXP2, EXP3, EXP4, EXP5, EXP6, EXP7, EXP8, EXP9, EXPA, EXPB, EXPC, EXPD, EXPE, EXPF, EXP10, EXP11, EXP12, EXP13};  //Function pointers to the handlers
+    for (i = 0; i < NUM_VEC; i++){
+        idt[i].present = 0;                 //traverse and set all entries
         idt[i].size = 1;
         idt[i].reserved0 = 0;
         idt[i].reserved1 = 1;
         idt[i].reserved2 = 1;
         idt[i].reserved3 = 0;
         idt[i].reserved4 = 0;
-        idt[i].seg_selector = KERNEL_CS;
-        if (i<EXCEPTION_SIZE){
+        idt[i].seg_selector = KERNEL_CS;   
+        if (i<EXCEPTION_SIZE){              //if the given entry is for exceptions, set present, dpl to kernel, and link to corresponding handler
             idt[i].present = 1;
             idt[i].dpl = 0;
             SET_IDT_ENTRY(idt[i], EXP[i]);
         }
-        if (i==SYSTEMCALL){
+        if (i==SYSTEMCALL){                 //if the given entry is for system call, set present, dpl to applications, and link to corresponding handler
             idt[i].present = 1;
             idt[i].dpl = 3;
             SET_IDT_ENTRY(idt[i], systemcall_blank);
         }
-        if (i==0x21){
+        if (i==KEYBOARD){                   //if the given entry is for keyboard, set present, dpl to kernel, and link to corresponding handler             
             idt[i].present = 1;
             idt[i].dpl = 0;
             SET_IDT_ENTRY(idt[i], keyboard_intr);
         }
-        if (i==0x28){
+        if (i==RTC){                        //if the given entry is for RTC, set present, dpl to kernel, and link to corresponding handler     
             idt[i].present = 1;
             idt[i].dpl = 0;
             SET_IDT_ENTRY(idt[i], rtc_intr);
         }
     }
-    lidt(idt_desc_ptr);
+    lidt(idt_desc_ptr);                     //load the IDT
 }

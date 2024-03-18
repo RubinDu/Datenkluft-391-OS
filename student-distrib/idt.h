@@ -1,9 +1,10 @@
 #ifndef IDT_H
 #define IDT_H
 
-#define IDT_SIZE 0x100
 #define EXCEPTION_SIZE 0x14
 #define SYSTEMCALL 0x80
+#define KEYBOARD 0x21
+#define RTC 0x28
 
 void EXP0();
 void EXP1();

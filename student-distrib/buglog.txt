@@ -1,0 +1,14 @@
+Author: Rubin Du
+Description: Stuck in a loop of the kernel boot screen
+Location: boot.S
+Fix: Have to first create a GDT descriptor and then load using lgdt instead of directly lgdt gdt
+
+Author: Rubin Du
+Description: Kernel killed immediately when an exception happens
+Location: idt.c
+Fix: Forgot to specify seg_selector as kernel code segment. Fixed by correcting it
+
+Author: Rubin Du
+Description: Interrupts can still trigger after exception is raised
+Location: idt.c
+Fix: Interrupt flags isn't masked automatically after an exception is raised. Have to manually call cli in handler

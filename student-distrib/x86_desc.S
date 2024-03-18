@@ -107,6 +107,7 @@ _idt:
 
 idt_bottom:
 
+    # Set up GDT descriptor
 gdt_desc:
     .word gdt_bottom - gdt - 1
     .long gdt
