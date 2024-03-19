@@ -5,7 +5,7 @@
 .globl keyboard_intr, rtc_intr
 
 # Keyboard interrupt linkage
-# Masks interrupt flags, saves all, call the corresponding handler, restores all, return from the interrupt
+# Masks interrupt flags, saves all, call the corresponding handler, restores all, return from the interrupt, function headers in .h file
 keyboard_intr:
     cli
     pushfl
@@ -17,7 +17,7 @@ keyboard_intr:
     iret
 
 # RTC interrupt linkage
-# Masks interrupt flags, saves all, call the corresponding handler, restores all, return from the interrupt
+# Masks interrupt flags, saves all, call the corresponding handler, restores all, return from the interrupt, function headers in .h file
 rtc_intr:
     cli
     pushfl
