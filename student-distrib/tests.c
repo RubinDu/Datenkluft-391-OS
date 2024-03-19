@@ -197,11 +197,12 @@ int rtc_test(int32_t rate)
  * Files: paging.h/c
  */
 int all_paging(){
-	int i, val;
-	for (i = 0x400000; i < 0x800000-4; i++)
-		val = *(int*)i;
-	for (i = 0xB8000; i < 0xB9000-4; i++)
-		val = *(int*)i;
+	int i;
+	char val;
+	for (i = 0x400000; i < 0x800000; i++)
+		val = *(char*)i;
+	for (i = 0xB8000; i < 0xB9000; i++)
+		val = *(char*)i;
 	return PASS;
 }
 
