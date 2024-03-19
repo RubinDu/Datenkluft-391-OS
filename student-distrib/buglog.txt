@@ -12,3 +12,13 @@ Author: Rubin Du
 Description: Interrupts can still trigger after exception is raised
 Location: idt.c
 Fix: Interrupt flags isn't masked automatically after an exception is raised. Have to manually call cli in handler
+
+Author: Shanbo Zhang
+Description: Paging does not work correctly as desired.
+Location: paging.c
+Fix: To enable paging, we firstly need to set all related registers to desired value, then set bit #31 of the CR0 to 1. We also need to set the protection mode.
+
+Author: Shanbo Zhang
+Description: Page Fault was not generated as I access random, meaningless addresses.
+Location: paging.c
+Fix: We need to set the paging base address even though we don't need such pages, because these pages still need to map to corresponding address ranges. Also, we need to set the page_size to correct granularity (4KB or 4MB).
