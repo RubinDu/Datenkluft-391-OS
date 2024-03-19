@@ -5,6 +5,7 @@
 #include "lib.h"
 #include "i8259.h"
 
+// RTC ports from https://wiki.osdev.org/RTC
 #define RTC_COMMAND     0x70
 #define RTC_DATA        0x71
 
@@ -13,9 +14,6 @@
 #define REG_C           0x0C
 
 #define RTC_IRQ         8
-#define RTC_FREQ        1024
-#define RTC_RATE_2      0x0F
-
 
 void rtc_init();
 void rtc_handler();

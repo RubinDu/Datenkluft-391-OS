@@ -54,7 +54,7 @@ int idt_test(){
  * 
  * Raise division by 0 exception
  * Inputs: None
- * Outputs: PASS/FAIL
+ * Outputs: FAIL
  * Side Effects: Freezes the kernel and display exception if success
  * Coverage: Exceptions
  * Files: idt.h/c
@@ -70,7 +70,7 @@ int EXP0_test(){
  * 
  * Raise invalid opcode exception
  * Inputs: None
- * Outputs: PASS/FAIL
+ * Outputs: FAIL
  * Side Effects: Freezes the kernel and display exception if success
  * Coverage: Exceptions
  * Files: idt.h/c
@@ -85,7 +85,7 @@ int EXP6_test(){
  * 
  * Attempt to access a missing idt entry
  * Inputs: None
- * Outputs: PASS/FAIL
+ * Outputs: FAIL
  * Side Effects: Freezes the kernel and display missing segment exception if success
  * Coverage: Exceptions
  * Files: idt.h/c
@@ -100,7 +100,7 @@ int Missing_idt_test(){
  * 
  * Raise system call
  * Inputs: None
- * Outputs: PASS/FAIL
+ * Outputs: FAIL
  * Side Effects: Freezes the kernel and display unimplemented if success
  * Coverage: System calls
  * Files: idt.h/c
@@ -125,53 +125,66 @@ int paging_test(int *ptr){
 	return *ptr;
 }
 
-int kb_test(){
+/* irq_enable_test
+ * 
+ * Enables an irq of the PIC
+ * Inputs: irq index
+ * Outputs: PASS
+ * Side Effects: Enables the given irq if it is valid
+ * Coverage: PIC
+ * Files: i8259.c/h
+ */
+int irq_enable_test(int irq){
 	TEST_HEADER;
-	__asm__("int	$0x21");
-	return 1;
-}
-
-int clock_test(){
-	TEST_HEADER;
-	__asm__("int	$0x28");
-	return 1;
-}
-
-int irq_enable_test(){
-	TEST_HEADER;
-	enable_irq(100); // invalid irq number will be return
+	enable_irq(irq); // invalid irq number will be return
 	return PASS;
 }
 
-int irq_disable_test(){
+/* irq_disable_test
+ * 
+ * Disables an irq of the PIC
+ * Inputs: irq index
+ * Outputs: PASS
+ * Side Effects: Disables the given irq if it is valid
+ * Coverage: PIC
+ * Files: i8259.c/h
+ */
+int irq_disable_test(int irq){
 	TEST_HEADER;
-	disable_irq(100);
+	disable_irq(irq);
 	return PASS;
 }
 
+/* eoi_test
+ * 
+ * Checks if send_eoi can handle invalid irq
+ * Inputs: None
+ * Outputs: PASS
+ * Side Effects: None
+ * Coverage: PIC
+ * Files: i8259.c/h
+ */
 int eoi_test(){
 	TEST_HEADER;
 	send_eoi(100);
 	return PASS;
 }
 
-// int rtc_test( void )
-// {
-// 	TEST_HEADER;
-// 	int i;
-// 	for(i=0; i<1000000; i++){};
-// 	rtc_init();
-// 	for(i=0; i<1000000; i++){};
-// 	disable_irq(RTC_IRQ);
-// 	return PASS;
-// }
-
-// int keyboard_test(){
-// 	TEST_HEADER;
-// 	keyboard_init();
-// 	disable_irq(1); //keyboard irq = 0x1
-// 	return PASS;
-// }
+/* rtc_test
+ * 
+ * Sets the rate of the RTC
+ * Inputs: rate
+ * Outputs: PASS
+ * Side Effects: Sets the rate of the RTC if it is valid
+ * Coverage: RTC
+ * Files: rtc.c/h
+ */
+int rtc_test(int32_t rate)
+{
+	TEST_HEADER;
+	rtc_set_rate(rate);
+	return PASS;
+}
 
 /* Checkpoint 2 tests */
 /* Checkpoint 3 tests */
@@ -184,20 +197,14 @@ void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
 	//TEST_OUTPUT("Invalid opcode exception test", EXP6_test());
-	TEST_OUTPUT("Missing idt entry test", Missing_idt_test());
+	//TEST_OUTPUT("Missing idt entry test", Missing_idt_test());
 	//TEST_OUTPUT("System call test", systemcall_test());
 	//TEST_OUTPUT("Valid pointer test: Kernel", paging_test((int*)0x400000));
 	//TEST_OUTPUT("Valid pointer test: Video Memory", paging_test((int*)0xB8000));
 	//TEST_OUTPUT("Invalid pointer test", paging_test((int*)0x3FFFFF));
+	//TEST_OUTPUT("RTC rate test", rtc_test(15));
+	//TEST_OUTPUT("IRQ enable test", irq_enable_test(100));
+	//TEST_OUTPUT("IRQ disable test", irq_disable_test(1));
 	
-	while (1);
-	
-	// launch your tests here
-	// TEST_OUTPUT("irq_enable_test", irq_enable_test());
-	// TEST_OUTPUT("irq_disable_test", irq_disable_test());
-	// TEST_OUTPUT("eoi_test", eoi_test());
-	//TEST_OUTPUT("rtc_test", rtc_test());	
-	//TEST_OUTPUT("keyboard_test", keyboard_test());
-	// TEST_OUTPUT("kb_test", kb_test());
-	//TEST_OUTPUT("clock_test", clock_test());
+	while (1); //freezes the kernel so we can see the output
 }

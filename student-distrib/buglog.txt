@@ -1,3 +1,5 @@
+CP1 Bugs
+
 Author: Rubin Du
 Description: Stuck in a loop of the kernel boot screen
 Location: boot.S
@@ -17,3 +19,13 @@ Author: Shanbo Zhang
 Description: Page Fault was not generated as I access random, meaningless addresses.
 Location: paging.c
 Fix: We need to set the paging base address even though we don't need such pages, because these pages still need to map to corresponding address ranges. Also, we need to set the page_size to correct granularity (4KB or 4MB).
+
+Author: Rubin Du
+Description: RTC interrupts doesn't work
+Location: i8259.c
+Fix: Have to enable both the ir2 pin and the correct ir pin on the slave pic when initializing device interrupts connected to slave pics. Can be done by enable both irq initializing the device connected to the slave or enable slave pic when initializing 8259A (which I did)
+
+Author: Rubin Du
+Description: RTC change rate doesn't work as intended
+Location rtc.c
+Fix: Misunderstood the meaning of frequency and rate on https://wiki.osdev.org/RTC, and used the wrong thing for inputs. Fixed by correcting it.
