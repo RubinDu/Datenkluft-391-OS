@@ -66,6 +66,36 @@ int EXP0_test(){
     return FAIL;
 }
 
+/* EXP6_test
+ * 
+ * Raise invalid opcode exception
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: Freezes the kernel and display exception if success
+ * Coverage: Exceptions
+ * Files: idt.h/c
+ */
+int EXP6_test(){
+	TEST_HEADER;
+	__asm__("ud2");
+	return FAIL;
+}
+
+/* Missing_idt_test
+ * 
+ * Attempt to access a missing idt entry
+ * Inputs: None
+ * Outputs: PASS/FAIL
+ * Side Effects: Freezes the kernel and display missing segment exception if success
+ * Coverage: Exceptions
+ * Files: idt.h/c
+ */
+int Missing_idt_test(){
+	TEST_HEADER;
+	__asm__("int	$0x1F");
+	return FAIL;
+}
+
 /* systemcall_test
  * 
  * Raise system call
@@ -81,7 +111,7 @@ int systemcall_test(){
 	return FAIL;
 }
 
-/* systemcall_test
+/* paging_test
  * 
  * Dereference a pointer to a given memory address
  * Inputs: a pointer to an address
@@ -153,10 +183,12 @@ int eoi_test(){
 void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
+	//TEST_OUTPUT("Invalid opcode exception test", EXP6_test());
+	TEST_OUTPUT("Missing idt entry test", Missing_idt_test());
 	//TEST_OUTPUT("System call test", systemcall_test());
-	TEST_OUTPUT("Valid pointer test: Kernel", paging_test((int*)0x400000));
-	TEST_OUTPUT("Valid pointer test: Video Memory", paging_test((int*)0xB8000));
-	TEST_OUTPUT("Invalid pointer test", paging_test((int*)0x3FFFFF));
+	//TEST_OUTPUT("Valid pointer test: Kernel", paging_test((int*)0x400000));
+	//TEST_OUTPUT("Valid pointer test: Video Memory", paging_test((int*)0xB8000));
+	//TEST_OUTPUT("Invalid pointer test", paging_test((int*)0x3FFFFF));
 	
 	while (1);
 	

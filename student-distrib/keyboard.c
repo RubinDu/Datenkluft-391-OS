@@ -38,5 +38,5 @@ void keyboard_handler(){
         clear();
         printf("%c", keys[(uint32_t)sc]);
     }
-    send_eoi(0x1);      //Send end of interrupt
+    send_eoi(KEYBOARD_IRQ);      //Send end of interrupt
 }
