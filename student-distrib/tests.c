@@ -186,6 +186,25 @@ int rtc_test(int32_t rate)
 	return PASS;
 }
 
+
+/* all_paging
+ * 
+ * Dereference all valid memory addresses
+ * Inputs: None
+ * Outputs: PASS
+ * Side Effects: None
+ * Coverage: Paging
+ * Files: paging.h/c
+ */
+int all_paging(){
+	int i, val;
+	for (i = 0x400000; i < 0x800000-4; i++)
+		val = *(int*)i;
+	for (i = 0xB8000; i < 0xB9000-4; i++)
+		val = *(int*)i;
+	return PASS;
+}
+
 /* Checkpoint 2 tests */
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
@@ -199,12 +218,13 @@ void launch_tests(){
 	//TEST_OUTPUT("Invalid opcode exception test", EXP6_test());
 	//TEST_OUTPUT("Missing idt entry test", Missing_idt_test());
 	//TEST_OUTPUT("System call test", systemcall_test());
-	//TEST_OUTPUT("Valid pointer test: Kernel", paging_test((int*)0x400000));
+	//TEST_OUTPUT("Valid pointer test: Kernel", paging_test((int*)0x700000));
 	//TEST_OUTPUT("Valid pointer test: Video Memory", paging_test((int*)0xB8000));
 	//TEST_OUTPUT("Invalid pointer test", paging_test((int*)0x3FFFFF));
 	//TEST_OUTPUT("RTC rate test", rtc_test(15));
 	//TEST_OUTPUT("IRQ enable test", irq_enable_test(100));
 	//TEST_OUTPUT("IRQ disable test", irq_disable_test(1));
+	//TEST_OUTPUT("All paging test", all_paging());
 	
 	while (1); //freezes the kernel so we can see the output
 }
