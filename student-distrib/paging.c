@@ -1,8 +1,8 @@
 #include "paging.h"
 #include "lib.h"
 
-pde_t page_directory[PAGE_DIRECTORY_COUNT] __attribute__((aligned(PAGE_DIRECTORY_COUNT*sizeof(pde_t))));
-pte_t page_table[PAGE_TABLE_COUNT] __attribute__((aligned(PAGE_TABLE_COUNT*sizeof(pte_t))));
+pde_t page_directory[PAGE_DIRECTORY_COUNT] __attribute__((aligned(PAGING_ALIGNMENT)));
+pte_t page_table[PAGE_TABLE_COUNT] __attribute__((aligned(PAGING_ALIGNMENT)));
 
 /**
  * void init_paging();
@@ -28,27 +28,28 @@ void paging_init() {
     /* PDE #0: the first 4MB should be further split into 4KB subpages */
     page_directory[0].KB.present = 1;
     page_directory[0].KB.page_size = 0;
-    page_directory[0].KB.page_table_base_address = ((uint32_t)page_table >> PTE_OFFSET);
+    page_directory[0].val |= (uint32_t)page_table; /* plug the page table address into the page_dir[0]*/
 
     /* PDE #1: the second 4MB should be kernel page */
     page_directory[1].MB.present = 1;
     page_directory[1].MB.page_size = 1;
-    page_directory[1].MB.page_base_address = (0x400000 >> PDE_OFFSET);
+    page_directory[1].val |= (uint32_t)KERNEL_ADDR; /* plug the kernel address into the page_dir[1]*/
 
+    /* PDE/PTE 2-1024: set necessary things, not presented*/
     page_table[1].page_base_address = 1;
     for (i = 2; i < PAGE_DIRECTORY_COUNT; ++i) {
-        page_directory[i].MB.page_size = 1;
-        page_directory[i].MB.page_base_address = i;
+        page_directory[i].MB.page_size = 1; /* assign to 4MB pages for all remaining pages*/
+        page_directory[i].MB.page_base_address = i; /* assign each address space to a specific page */
         page_table[i].page_base_address = i;
     }
     
-    page_table[VIDEO_MEMORY_PTE].present = 1;
+    page_table[VIDEO_MEMORY_PTE].present = 1; /* the page storing the video memory should be presented */
 
     /* **************************************************
      * *          Set Page Directory to CR3             *
      * **************************************************/
     asm volatile (
-        "movl %0, %%cr3" :                /* no outputs */
+        "movl %0, %%cr3" :                      /* no outputs */
                          : "r" (page_directory) /* input, gp register*/
     );
 
