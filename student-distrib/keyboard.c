@@ -34,9 +34,9 @@ void keyboard_init(){
  */
 void keyboard_handler(){
     sc = inb(KEYBOARD_PORT);     //Scans from keyboard port 0x60
-    if (sc<54){         //if valid, print to screen
+    if (sc < 54){         //if valid, print to screen
         clear();
-        printf("%c", keys[sc]);
+        printf("%c", keys[(uint32_t)sc]);
     }
     send_eoi(0x1);      //Send end of interrupt
 }

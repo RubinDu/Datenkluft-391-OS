@@ -154,9 +154,9 @@ void launch_tests(){
 	TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
 	//TEST_OUTPUT("System call test", systemcall_test());
-	TEST_OUTPUT("Valid pointer test: Kernel", paging_test(0x400000));
-	TEST_OUTPUT("Valid pointer test: Video Memory", paging_test(0xB8000));
-	TEST_OUTPUT("Invalid pointer test", paging_test(0x3FFFFF));
+	TEST_OUTPUT("Valid pointer test: Kernel", paging_test((int*)0x400000));
+	TEST_OUTPUT("Valid pointer test: Video Memory", paging_test((int*)0xB8000));
+	TEST_OUTPUT("Invalid pointer test", paging_test((int*)0x3FFFFF));
 	
 	while (1);
 	
