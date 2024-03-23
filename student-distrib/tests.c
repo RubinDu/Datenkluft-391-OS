@@ -4,6 +4,7 @@
 #include "types.h"
 #include "rtc.h"
 #include "keyboard.h"
+#include "terminal.h"
 
 #define PASS 1
 #define FAIL 0
@@ -197,15 +198,26 @@ int rtc_test(int32_t rate)
  * Files: paging.h/c
  */
 int all_paging(){
-	int i, val;
-	for (i = 0x400000; i < 0x800000-4; i++)
-		val = *(int*)i;
-	for (i = 0xB8000; i < 0xB9000-4; i++)
-		val = *(int*)i;
+	int i;
+	char val;
+	for (i = 0x400000; i < 0x800000; i++)
+		val = *(char*)i;
+	for (i = 0xB8000; i < 0xB9000; i++)
+		val = *(char*)i;
 	return PASS;
 }
 
+
 /* Checkpoint 2 tests */
+
+int terminal_test(){
+	TEST_HEADER;
+	char *buf[128];
+	memset(buf, 0, 128);
+	terminal_read(0, buf, 64);
+	terminal_write(0, buf, 32);
+	return PASS;
+}
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -224,7 +236,10 @@ void launch_tests(){
 	//TEST_OUTPUT("RTC rate test", rtc_test(15));
 	//TEST_OUTPUT("IRQ enable test", irq_enable_test(100));
 	//TEST_OUTPUT("IRQ disable test", irq_disable_test(1));
-	//TEST_OUTPUT("All paging test", all_paging());
+	TEST_OUTPUT("All paging test", all_paging());
+	while (1)
+	TEST_OUTPUT("Terminal test", terminal_test());
+	
 	
 	while (1); //freezes the kernel so we can see the output
 }

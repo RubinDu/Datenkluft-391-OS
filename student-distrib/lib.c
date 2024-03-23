@@ -22,6 +22,9 @@ void clear(void) {
         *(uint8_t *)(video_mem + (i << 1)) = ' ';
         *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
     }
+    screen_x = 0;
+    screen_y = 0;
+    update_cursor(screen_x, screen_y);
 }
 
 /* Standard printf().
@@ -171,13 +174,33 @@ void putc(uint8_t c) {
     if(c == '\n' || c == '\r') {
         screen_y++;
         screen_x = 0;
-    } else {
+        if (screen_y == NUM_ROWS)   // If past the end of the screen, scroll
+            scroll();
+    }
+    else if (c == '\b'){
+        if (!screen_x&&!screen_y)   // If at the beginning of the screen, return
+            return;
+        if (screen_x > 0)           // If not at border, move back one character
+            screen_x--;
+        else{                       // If line is empty, move to the end of the previous line
+            screen_x = NUM_COLS - 1;
+            screen_y--;
+        }
+        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = ' ';    // Replace character with empty space
+        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
+    } 
+    else {                              // If not a command character, print the character
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
         screen_x++;
-        screen_x %= NUM_COLS;
-        screen_y = (screen_y + (screen_x / NUM_COLS)) % NUM_ROWS;
+        if (screen_x==NUM_COLS){        // If at the end of the line, move to the next line
+            screen_y++;
+            screen_x = 0;
+            if (screen_y == NUM_ROWS)   // If past the end of the screen, scroll
+                scroll();
+        }
     }
+    update_cursor(screen_x, screen_y);  // Update the cursor position
 }
 
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
@@ -473,4 +496,35 @@ void test_interrupts(void) {
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
         video_mem[i << 1]++;
     }
+}
+
+/* void scroll(void);
+ * Inputs: void
+ * Return Value: void
+ * Function: Scrolls the terminal by one line */
+void scroll(void) {
+    int32_t i;
+    char video_buf[(NUM_ROWS-1) * NUM_COLS * 2];                                // Create a buffer to store the video memory
+    memcpy(video_buf, video_mem + NUM_COLS * 2, (NUM_ROWS-1) * NUM_COLS * 2);   // Copy the video memory to the buffer
+    memcpy(video_mem, video_buf, (NUM_ROWS-1) * NUM_COLS * 2);                  // Copy the buffer back to the video memory with offset of one line
+    for (i = (NUM_ROWS-1) * NUM_COLS; i < NUM_ROWS * NUM_COLS; i++) {           // Clear the last line
+        *(uint8_t *)(video_mem + (i << 1)) = ' ';
+        *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+    }
+    screen_y--;                                                                 // Adjust the screen_y
+}
+
+/* void update_cursor(int x, int y)
+ * Inputs: int x = x of the cursor
+ *         int y = y of the cursor
+ * Return Value: void
+ * Function: Updates the cursor position */
+void update_cursor(int x, int y){
+    //reference: https://wiki.osdev.org/Text_Mode_Cursor
+	uint16_t pos = y * NUM_COLS + x;    //Position of the cursor
+ 
+	outb(0x3D4, 0x0F);                  //Set Cursor Low Byte
+	outb(0x3D5, (uint8_t) (pos & 0xFF));
+	outb(0x3D4, 0x0E);                  //Set Cursor High Byte
+	outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
 }
