@@ -209,13 +209,21 @@ int all_paging(){
 
 
 /* Checkpoint 2 tests */
-
+/* terminal_test
+ * 
+ * read from and then write to terminal
+ * Inputs: None
+ * Outputs: PASS
+ * Side Effects: None
+ * Coverage: Terminal, Keyboard
+ * Files: terminal.h/c, keyboard.h/c
+ */
 int terminal_test(){
 	TEST_HEADER;
 	char *buf[128];
 	memset(buf, 0, 128);
 	terminal_read(0, buf, 64);
-	terminal_write(0, buf, 32);
+	terminal_write(0, buf, 64);
 	return PASS;
 }
 /* Checkpoint 3 tests */
@@ -238,7 +246,7 @@ void launch_tests(){
 	//TEST_OUTPUT("IRQ disable test", irq_disable_test(1));
 	TEST_OUTPUT("All paging test", all_paging());
 	while (1)
-	TEST_OUTPUT("Terminal test", terminal_test());
+		TEST_OUTPUT("Terminal test", terminal_test());
 	
 	
 	while (1); //freezes the kernel so we can see the output

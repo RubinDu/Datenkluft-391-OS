@@ -11,25 +11,25 @@ static char cap_released = 1;
 static char ctrl = 0;         
 static char az = 0;
 static int num_echoed=0;
-static char read_buf[128];                      //Buffer for read
-static char keys[57]={                          //ps/2 keyboard scan char map for numbers, alphabet, and some symbols
+static char read_buf[READBUF_SIZE];                      //Buffer for read
+static char keys[KEYS_SIZE]={                          //ps/2 keyboard scan char map for numbers, alphabet, and some symbols
     0,   0,   '1', '2', '3', '4', '5', '6', 
-    '7', '8', '9', '0', '-', '=', 0,   0,
-    '\t','q', 'w', 'e', 'r', 't', 'y', 'i', 
+    '7', '8', '9', '0', '-', '=', 0,  '\t',
+    'q', 'w', 'e', 'r', 't', 'y', 'u','i', 
     'o', 'p', '[', ']', 0, 0 , 'a', 's', 
     'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', 
     '\'', '`', 0,  '\\','z', 'x', 'c', 'v', 
-    'b', 'n', 'm', ',', '.', '/', 0, 0, 0,
-    ' '};
-static char keys_shifted[57]={                    //ps/2 keyboard scan char map for numbers, alphabet, and some symbols when shift is pressed
+    'b', 'n', 'm', ',', '.', '/',  0,   0, 
+    0,' '};
+static char keys_shifted[KEYS_SIZE]={                    //ps/2 keyboard scan char map for numbers, alphabet, and some symbols when shift is pressed
     0,   0,   '!', '@', '#', '$', '%', '^', 
-    '&', '*', '(', ')', '_', '+', 0,   0,
-    '\t','Q', 'W', 'E', 'R', 'T', 'Y', 'I', 
+    '&', '*', '(', ')', '_', '+', 0,  '\t',
+    'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 
     'O', 'P', '{', '}', 0   , 0 , 'A', 'S', 
     'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', 
     '\"','~', 0,  '|', 'Z', 'X', 'C', 'V', 
-    'B', 'N', 'M', '<', '>', '?', 0, 0, 0,
-    ' '};
+    'B', 'N', 'M', '<', '>', '?', 0,    0, 
+    0,   ' '};
 
 /* 
  * keyboard_init
@@ -41,7 +41,7 @@ static char keys_shifted[57]={                    //ps/2 keyboard scan char map 
  */
 void keyboard_init(){                    
     enable_irq(KEYBOARD_IRQ);    //Keyboard is connected to IR1 of the master PIC, which is irq 1
-    memset(read_buf, '\n', 128);
+    memset(read_buf, '\n', READBUF_SIZE);
 }
 
 /* 
@@ -54,19 +54,21 @@ void keyboard_init(){
  */
 void keyboard_handler(){
     cli();
-    sc = inb(KEYBOARD_PORT);     //Scans from keyboard port 0x60
-    switch (sc&0xFF)
+    sc = inb(KEYBOARD_PORT);        //Scans from keyboard port 0x60
+    switch (sc&0xFF)                //Only lower 8 bits are valid
     {
     case 0x2A:      //LShift pressed
         lshift =1;
         break;
     case 0xAA:      //LShift released
         lshift =0;
+        rshift =0;
         break;
     case 0x36:      //RShift pressed
         rshift =1;
         break;
     case 0xB6:      //RShift released
+        lshift =0;
         rshift =0;
         break;
     case 0x3A:      //Caps lock pressed
@@ -84,24 +86,24 @@ void keyboard_handler(){
     case 0x9D:      //Ctrl released
         ctrl = 0;
         break;
-    case 0x0E:
+    case 0x0E:      //Backspace pressed
         if (num_echoed){
             putc('\b');
             num_echoed --;
-            read_buf[num_echoed]='\n';
+            if (num_echoed<READBUF_SIZE-1)
+                read_buf[num_echoed]='\n';
         }
         break;
     case 0x1C:      //Enter pressed
-        num_echoed = 0;
         putc('\n');
-        end_of_line(read_buf);
-        memset(read_buf, '\n', 128);
+        end_of_line(read_buf);    // Return contents in the read buffer to terminal and resume terminal_read
+        reset_buf();
         break;
     default:
-        if (sc < 57 && keys[(uint32_t)sc]){
+        if (sc < KEYS_SIZE && keys[(uint32_t)sc]){
             if (ctrl){
                 switch (sc){
-                case 0x26: 
+                case 0x26:      //Ctrl + L
                     clear();
                     break;
                 default:
@@ -109,16 +111,16 @@ void keyboard_handler(){
                 }
             }
             else{
-                az=keys[(uint32_t)sc] >= 'a' && keys[(uint32_t)sc] <= 'z';
-                if ((az&&(!(lshift||rshift)!=!cap))||(lshift||rshift)&&!az){
-                    if (num_echoed<127)
+                az=keys[(uint32_t)sc] >= 'a' && keys[(uint32_t)sc] <= 'z';      //Check if the key pressed is an alphabet
+                if ((az&&(!(lshift||rshift)!=!cap))||(!az&&(lshift||rshift))){    //If alphabet, check if only one of shift and cap is active. If not, check if shift is active
+                    if (num_echoed<READBUF_SIZE-1)                              //If buffer isn't full, put character into buffer
                         read_buf[num_echoed]=keys_shifted[(uint32_t)sc];
-                    putc(keys_shifted[(uint32_t)sc]);
+                    putc(keys_shifted[(uint32_t)sc]);                           //Print shifted character
                 }
-                else{
-                    putc(keys[(uint32_t)sc]);
-                    if (num_echoed<127)
+                else{                           
+                    if (num_echoed<READBUF_SIZE-1)                              //If buffer isn't full, put character into buffer        
                         read_buf[num_echoed]=keys[(uint32_t)sc];
+                    putc(keys[(uint32_t)sc]);                                   //Print character         
                 }
                 num_echoed++;
             }
@@ -127,4 +129,17 @@ void keyboard_handler(){
     }
     send_eoi(KEYBOARD_IRQ);      //Send end of interrupt
     sti();
+}
+
+/* 
+ * reset_buf
+ *   DESCRIPTION: Reset read buffer and counter upon a new terminal_read
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none 
+ *   SIDE EFFECTS: Clears read buffer and counter
+ */
+void reset_buf(){
+    num_echoed = 0;
+    memset(read_buf, '\n', READBUF_SIZE);    //Resets the read buffer to all newlines
 }

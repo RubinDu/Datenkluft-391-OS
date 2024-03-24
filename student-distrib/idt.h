@@ -6,6 +6,14 @@
 #define KEYBOARD 0x21
 #define RTC 0x28
 
+/* 
+ * EXPX/systemcall_blank
+ *   DESCRIPTION: Handlers for exceptions and unimplemented system call
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none 
+ *   SIDE EFFECTS: Prints corresponding exception (or unimplemented system call) and freezes the kernel
+ */
 void EXP0();
 void EXP1();
 void EXP2();
@@ -28,6 +36,14 @@ void EXP12();
 void EXP13();
 void systemcall_blank();
 
+/* 
+ * idt_init
+ *   DESCRIPTION: Initializes interrupt descripter table
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none 
+ *   SIDE EFFECTS: Fills the entries and loads them into IDT
+ */
 extern void idt_init();
 
 #endif

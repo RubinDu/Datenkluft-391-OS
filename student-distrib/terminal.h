@@ -1,5 +1,6 @@
 #ifndef TERMINAL
 #define TERMINAL
+#include "types.h"
 
 /*
 * terminal_read

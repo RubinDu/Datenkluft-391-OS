@@ -27,5 +27,27 @@ Fix: Have to enable both the ir2 pin and the correct ir pin on the slave pic whe
 
 Author: Rubin Du
 Description: RTC change rate doesn't work as intended
-Location rtc.c
+Location: rtc.c
 Fix: Misunderstood the meaning of frequency and rate on https://wiki.osdev.org/RTC, and used the wrong thing for inputs. Fixed by correcting it.
+
+CP2 Bugs
+
+Author: Rubin Du
+Description: Shift release can't be received
+Location: keyboard.c
+Fix: Have to mask others but the last byte received from keyboard port for release signals
+
+Author: Rubin Du
+Description: Spamming left and right shifts together sometimes makes the shift stuck
+Location: keyboard.c
+Fix: Have to flush both shift whenever one shift is released, as release signals sometimes can't be properly recieved when other keys are holding/Spamming
+
+Author: Rubin Du
+Description: Typing when terminal isn't reading sometimes corrupts the read buffer / causes page fault
+Location: terminal.c
+Fix: end_of_line function should return immediately when terminal isn't read, so it won't corrupts data that it should't be accessing
+
+Author: Rubin Du
+Description: Spamming keyboard during write makes bugs the string written on terminal
+Location: terminal.c
+Fix: terminal write has to mask interrupts when write to prevent echoed keyboard input writing to screen

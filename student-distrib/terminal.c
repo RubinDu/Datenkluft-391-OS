@@ -1,7 +1,6 @@
 #include "terminal.h"
 #include "keyboard.h"
 #include "lib.h"
-#include "types.h"
 
 volatile static char idle = 1;   // 1 if terminal is idle, 0 if terminal is reading
 static void* readbuf;            // pointer to the read buffer
@@ -20,6 +19,7 @@ static int32_t readcount;        // number of bytes to read
 int32_t terminal_read(int32_t file, void* buf, int32_t nbytes){
     readbuf = buf;      // Store necessary data for end_of_line
     readcount = nbytes;
+    reset_buf();        // Reset the keyboard buffer
     idle = 0;           // Set status to reading
     while (!idle);      // Wait reading to finish
     return readcount;   // Return actual number of bytes read
@@ -82,11 +82,13 @@ void end_of_line(char* buf){
         return;
     int i;
     for (i = 0; i < readcount; i++){    // Traverse through the keyboard buffer, move characters to read buffer until size of read buffer reached or newline
-        if (buf[i] == '\n')             
+        if (buf[i] == '\n'){
+            i++;
             break;
+        }
         ((char*)readbuf)[i] = buf[i];
     }
-    ((char*)readbuf)[i] = '\n';         // Add newline to the end of the read buffer
-    readcount = i;                      // Update to the actual number of bytes read
+    ((char*)readbuf)[i-1] ='\n';        // Add newline to the end of the read buffer
+    readcount = i;                      // Set actual number of bytes read
     idle = 1;                           // Set terminal to idle
 }

@@ -7,6 +7,7 @@
 #define NUM_COLS    80
 #define NUM_ROWS    25
 #define ATTRIB      0x7
+#define TAB         0xF
 
 static int screen_x;
 static int screen_y;
@@ -178,17 +179,29 @@ void putc(uint8_t c) {
             scroll();
     }
     else if (c == '\b'){
-        if (!screen_x&&!screen_y)   // If at the beginning of the screen, return
-            return;
-        if (screen_x > 0)           // If not at border, move back one character
-            screen_x--;
-        else{                       // If line is empty, move to the end of the previous line
-            screen_x = NUM_COLS - 1;
-            screen_y--;
+        int i, count = 1;
+        if ((screen_x||screen_y)&&*(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x-1) << 1)) == ' '&&*(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x-1) << 1) + 1) == TAB)
+            count = 4;
+        for (i = 0; i < count; i++){
+            if (!screen_x&&!screen_y)   // If at the beginning of the screen, return
+                return;
+            if (screen_x > 0)           // If not at border, move back one character
+                screen_x--;
+            else{                       // If line is empty, move to the end of the previous line
+                screen_x = NUM_COLS - 1;
+                screen_y--;
+            }
+            *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = ' ';    // Replace character with empty space
+            *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
         }
-        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = ' ';    // Replace character with empty space
-        *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
     } 
+    else if (c=='\t'){
+        int i;
+        for (i = 0; i < 4; i++){
+            putc(' ');                                                                          // Print four space
+            *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x-1) << 1) + 1) = TAB;      // Mark foreground as TAB (since space doesn't use foreground)
+        }
+    }
     else {                              // If not a command character, print the character
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1)) = c;
         *(uint8_t *)(video_mem + ((NUM_COLS * screen_y + screen_x) << 1) + 1) = ATTRIB;
@@ -502,7 +515,7 @@ void test_interrupts(void) {
  * Inputs: void
  * Return Value: void
  * Function: Scrolls the terminal by one line */
-void scroll(void) {
+void scroll() {
     int32_t i;
     char video_buf[(NUM_ROWS-1) * NUM_COLS * 2];                                // Create a buffer to store the video memory
     memcpy(video_buf, video_mem + NUM_COLS * 2, (NUM_ROWS-1) * NUM_COLS * 2);   // Copy the video memory to the buffer
@@ -523,8 +536,8 @@ void update_cursor(int x, int y){
     //reference: https://wiki.osdev.org/Text_Mode_Cursor
 	uint16_t pos = y * NUM_COLS + x;    //Position of the cursor
  
-	outb(0x3D4, 0x0F);                  //Set Cursor Low Byte
-	outb(0x3D5, (uint8_t) (pos & 0xFF));
-	outb(0x3D4, 0x0E);                  //Set Cursor High Byte
-	outb(0x3D5, (uint8_t) ((pos >> 8) & 0xFF));
+	outb(0x0F, 0x3D4);                  //Set Cursor Low Byte
+	outb((uint8_t) (pos & 0xFF), 0x3D5);
+	outb(0x0E, 0x3D4);                  //Set Cursor High Byte
+	outb((uint8_t) ((pos >> 8) & 0xFF), 0x3D5);
 }
