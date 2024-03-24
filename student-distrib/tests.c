@@ -189,10 +189,10 @@ int rtc_test(int32_t rate)
 
 /* rtc_driver_test
  * 
- * Sets the rate of the RTC
- * Inputs: rate
+ * test open, close, read, write functions of rtc
+ * Inputs: none
  * Outputs: PASS
- * Side Effects: Sets the rate of the RTC if it is valid
+ * Side Effects: none
  * Coverage: RTC
  * Files: rtc.c/h
  */
@@ -202,18 +202,69 @@ int rtc_driver_test()
 	rtc_open(NULL);
 
 	int32_t i;
-	for (i = 10; i >= 0; --i) {
-		rtc_read(NULL, NULL, NULL);
-		printf("RTC Interrupt #%d\n", i);
-	}
 
-	i = 0x1000;
+	printf("0s\n");
+	for (i = 10; i > 0; --i) {
+		rtc_read(NULL, NULL, NULL);
+		if (!(i & 1)) {
+			printf("Interrupt %d\n", i >> 1);
+		}
+	}
+	printf("5s\n");
+
+	i = 0x100;
 	rtc_write(NULL, &i, sizeof(int32_t));
-	for (; i >= 0; --i) {
-		rtc_read(NULL, NULL, NULL);
-		printf("RTC Interrupt #%d\n", i);
-	}
 
+	printf("0s\n");
+	for (i = 0x500; i >= 0; --i) {
+		rtc_read(NULL, NULL, NULL);
+		if (!(i & 0xFF)) {
+			printf("Interrupt %d\n", i >> 8);
+		}
+		// printf("Interrupt %d\n", i);
+	}
+	printf("5s\n");
+
+	rtc_close(NULL);
+	return PASS;
+}
+
+/* rtc_write_test
+ * 
+ * test write with invalid input
+ * Inputs: none
+ * Outputs: PASS or FAIL
+ * Side Effects: none
+ * Coverage: RTC
+ * Files: rtc.c/h
+ */
+int rtc_write_test()
+{
+	TEST_HEADER;
+	rtc_open(NULL);
+	int32_t ref;
+	if (rtc_write(NULL, NULL, NULL) != -1) {
+		return FAIL;
+	}
+	ref = 0xECE391;
+	if (rtc_write(NULL, &ref, sizeof(int32_t)) != -1) {
+		return FAIL;
+	}
+	ref = 0x8000;
+	if (rtc_write(NULL, &ref, sizeof(int32_t)) != -1) {
+		return FAIL;
+	}
+	ref = -0x8000;
+	if (rtc_write(NULL, &ref, sizeof(int32_t)) != -1) {
+		return FAIL;
+	}
+	ref = 0x100;
+	if (rtc_write(NULL, &ref, sizeof(int32_t)) != 0) {
+		return FAIL;
+	}
+	if (rtc_write(NULL, &ref, 0) != -1) {
+		return FAIL;
+	}
 	rtc_close(NULL);
 	return PASS;
 }
@@ -264,6 +315,8 @@ int terminal_test(){
 
 /* Test suite entry point */
 void launch_tests(){
+	int32_t ref;
+
 	TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
 	//TEST_OUTPUT("Invalid opcode exception test", EXP6_test());
@@ -278,6 +331,8 @@ void launch_tests(){
 	// TEST_OUTPUT("All paging test", all_paging());
 	// while (1)
 	// 	TEST_OUTPUT("Terminal test", terminal_test());
+
+	TEST_OUTPUT("RTC Write Input Test", rtc_write_test());
 	TEST_OUTPUT("RTC Driver Test", rtc_driver_test());
 	
 	while (1); //freezes the kernel so we can see the output

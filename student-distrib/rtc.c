@@ -1,12 +1,18 @@
 #include "rtc.h"
 
-#define LOWEST_RATE 3
-#define HIGHEST_RATE 15
+#define MIN_RATE 6      /* as the instructor said, there would be problem a*/
+#define MAX_RATE 15     /* the maximum rate, which corresponds to 2 Hz, or 0.5 s/int*/
 
-#define LOWEST_FREQUENCY (0x8000 >> (HIGHEST_RATE - 1))
-#define HIGHEST_FREQUENCY (0x8000 >> (LOWEST_RATE - 1))
+#define MIN_FREQUENCY (0x8000 >> (MAX_RATE - 1)) /* 2 Hz */
+#define MAX_FREQUENCY (0x8000 >> (MIN_RATE - 1)) /* 1024 Hz*/
 
 uint32_t rtc_occurred;
+
+volatile struct rtc_info_t {
+    int32_t enabled; /* 1 if rtc is enabled, 0 otherwise */
+    int32_t current; /* the current progress to a milestone */
+    int32_t frequency; /* how many interrupts a logical rtc interrupt should occur */
+} rtc_info;
 
 /*
 * rtc_init
@@ -24,7 +30,8 @@ void rtc_init(){
     outb(prev | 0x40, RTC_DATA); // Turn on bit 6 of register B to enable periodic interrupts
     enable_irq(RTC_IRQ);
     sti();
-    rtc_set_rate(0);
+    rtc_set_rate(MIN_RATE); /* set the maximum acceptable rate, corresponding to 1024 Hz */
+    rtc_info.enabled = 0;   /* rtc is logically disabled at first */
 }
 
 /*
@@ -38,8 +45,14 @@ void rtc_init(){
 void rtc_handler(){
     cli();
     outb(REG_C, RTC_COMMAND); // Select and flush Register C
-    rtc_occurred = inb(RTC_DATA) & 0x80;
-    // printf("RTC interrupt, %d\n", rtc_occurred);
+    inb(RTC_DATA);
+    if (rtc_info.enabled) {
+        if (rtc_info.current <= 0) {
+            rtc_info.current = rtc_info.frequency;
+        } else {
+            --rtc_info.current;
+        }
+    }
     send_eoi(RTC_IRQ);
     sti();
 }
@@ -53,7 +66,7 @@ void rtc_handler(){
 *   SIDE EFFECTS: changes the frequency of the RTC
 */
 int32_t rtc_set_rate(int32_t rate){
-    if (rate < 0 || rate > 15){
+    if (rate < MIN_RATE || rate > MAX_RATE){
         return -1; // can only be within 0-15
     }
     cli();
@@ -67,11 +80,13 @@ int32_t rtc_set_rate(int32_t rate){
 }
 
 int32_t rtc_open(const uint8_t* filename){
-    rtc_set_rate(HIGHEST_RATE);
+    rtc_info.enabled = 1;
+    rtc_info.frequency = MAX_FREQUENCY / MIN_FREQUENCY;
     return 0;
 }
 
 int32_t rtc_close(int32_t fd){
+    rtc_info.enabled = 0;
     return 0;
 }
 
@@ -80,20 +95,20 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes){
         return -1;
     }
     int32_t frequency = *((int32_t*)buf);
-    if (frequency < LOWEST_FREQUENCY        /* 0x8000 >> (15 - 1) = 2 */
-        || frequency > HIGHEST_FREQUENCY    /* 0x8000 >> (3 - 1) = 0x2000*/
+    if (frequency < MIN_FREQUENCY
+        || frequency > MAX_FREQUENCY
         || (frequency & (frequency - 1))) { /* zero if power of 2 */
         return -1;
     }
-    printf("New rate: %d\n", 0x8000 / frequency);
-    rtc_set_rate(0x8000 / frequency);
+    rtc_info.current = rtc_info.frequency = (MAX_FREQUENCY / frequency);
     return 0;
 }
 
 int32_t rtc_read(int32_t fd, void* buf, int32_t nbytes){
     while (1) {
-        if (rtc_occurred) {
-            rtc_occurred = 0;
+        if (rtc_info.enabled && rtc_info.current == 0) {
+            // printf("Interrupt Reached\n");
+            --rtc_info.current;
             return 0;
         }
     }
