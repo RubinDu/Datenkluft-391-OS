@@ -1,5 +1,12 @@
 #include "rtc.h"
 
+#define LOWEST_RATE 3
+#define HIGHEST_RATE 15
+
+#define LOWEST_FREQUENCY (0x8000 >> (HIGHEST_RATE - 1))
+#define HIGHEST_FREQUENCY (0x8000 >> (LOWEST_RATE - 1))
+
+uint32_t rtc_occurred;
 
 /*
 * rtc_init
@@ -31,8 +38,8 @@ void rtc_init(){
 void rtc_handler(){
     cli();
     outb(REG_C, RTC_COMMAND); // Select and flush Register C
-    inb(RTC_DATA);
-    printf("RTC interrupt\n");
+    rtc_occurred = inb(RTC_DATA) & 0x80;
+    // printf("RTC interrupt, %d\n", rtc_occurred);
     send_eoi(RTC_IRQ);
     sti();
 }
@@ -60,6 +67,7 @@ int32_t rtc_set_rate(int32_t rate){
 }
 
 int32_t rtc_open(const uint8_t* filename){
+    rtc_set_rate(HIGHEST_RATE);
     return 0;
 }
 
@@ -68,9 +76,25 @@ int32_t rtc_close(int32_t fd){
 }
 
 int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes){
+    if (nbytes != sizeof(int32_t) || buf == NULL) { /* the size or the buffer is incorrect */
+        return -1;
+    }
+    int32_t frequency = *((int32_t*)buf);
+    if (frequency < LOWEST_FREQUENCY        /* 0x8000 >> (15 - 1) = 2 */
+        || frequency > HIGHEST_FREQUENCY    /* 0x8000 >> (3 - 1) = 0x2000*/
+        || (frequency & (frequency - 1))) { /* zero if power of 2 */
+        return -1;
+    }
+    printf("New rate: %d\n", 0x8000 / frequency);
+    rtc_set_rate(0x8000 / frequency);
     return 0;
 }
 
 int32_t rtc_read(int32_t fd, void* buf, int32_t nbytes){
-    return 0;
+    while (1) {
+        if (rtc_occurred) {
+            rtc_occurred = 0;
+            return 0;
+        }
+    }
 }

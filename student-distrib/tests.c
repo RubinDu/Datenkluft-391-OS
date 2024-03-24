@@ -187,6 +187,37 @@ int rtc_test(int32_t rate)
 	return PASS;
 }
 
+/* rtc_driver_test
+ * 
+ * Sets the rate of the RTC
+ * Inputs: rate
+ * Outputs: PASS
+ * Side Effects: Sets the rate of the RTC if it is valid
+ * Coverage: RTC
+ * Files: rtc.c/h
+ */
+int rtc_driver_test()
+{
+	TEST_HEADER;
+	rtc_open(NULL);
+
+	int32_t i;
+	for (i = 10; i >= 0; --i) {
+		rtc_read(NULL, NULL, NULL);
+		printf("RTC Interrupt #%d\n", i);
+	}
+
+	i = 0x1000;
+	rtc_write(NULL, &i, sizeof(int32_t));
+	for (; i >= 0; --i) {
+		rtc_read(NULL, NULL, NULL);
+		printf("RTC Interrupt #%d\n", i);
+	}
+
+	rtc_close(NULL);
+	return PASS;
+}
+
 
 /* all_paging
  * 
@@ -244,10 +275,10 @@ void launch_tests(){
 	//TEST_OUTPUT("RTC rate test", rtc_test(15));
 	//TEST_OUTPUT("IRQ enable test", irq_enable_test(100));
 	//TEST_OUTPUT("IRQ disable test", irq_disable_test(1));
-	TEST_OUTPUT("All paging test", all_paging());
-	while (1)
-		TEST_OUTPUT("Terminal test", terminal_test());
-	
+	// TEST_OUTPUT("All paging test", all_paging());
+	// while (1)
+	// 	TEST_OUTPUT("Terminal test", terminal_test());
+	TEST_OUTPUT("RTC Driver Test", rtc_driver_test());
 	
 	while (1); //freezes the kernel so we can see the output
 }
