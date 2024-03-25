@@ -5,6 +5,7 @@
 #include "rtc.h"
 #include "keyboard.h"
 #include "terminal.h"
+#include "filesys.h"
 
 #define PASS 1
 #define FAIL 0
@@ -353,6 +354,169 @@ int rtc_write_test()
 	return PASS;
 }
 
+
+void print_string( uint8_t* buf ) {
+	unsigned int i = 0;
+	unsigned int length = strlen((const int8_t*) buf);
+
+	for (i = 0; i < length; i++) {
+		putc(buf[i]);
+	}
+	return;
+}
+
+
+void print_filename( uint8_t* buf ) {
+    int i =0;
+	while(buf[i] != NULL && i < 32) {
+		putc(buf[i]);
+		i++;
+	}
+	while(i < 32) { /*TODO: Max file length is 32*/
+		printf(" ");
+		i++;
+	}
+}
+
+int read_name_test( void )
+{
+	TEST_HEADER;
+	dentry_t test_dentry;
+	unsigned int result;
+	char test_name[] = "frame0.txt";
+	result = read_dentry_by_name((const uint8_t*) test_name, &test_dentry);
+
+	if (result == -1) {
+		return FAIL;
+	} else {
+		return PASS;
+	}
+}
+
+int read_inval_name_test( void )
+{
+	TEST_HEADER;
+	dentry_t test_dentry;
+	unsigned int result;
+	unsigned int test_index = -1;
+	result = read_dentry_by_index(test_index, &test_dentry);
+
+	if (result == -1) {
+		return PASS;
+	} else {
+		return FAIL;
+	}
+}
+
+int read_data_test(uint8_t* filename) {
+	TEST_HEADER;
+	dentry_t test;
+	char buffer[40000] = {'\0'};
+	int i;
+	int32_t length_bytes;
+	read_dentry_by_name(filename,&test);
+	length_bytes = read_data(test.inode_num,0,(uint8_t*)buffer,40000);
+	for(i=0; i <length_bytes; i++){
+		if(buffer[i] == '\0'){
+			continue;
+		}
+		putc(buffer[i]);
+		}
+	return PASS;
+}
+
+int dir_read_test( void )
+{
+	dentry_t curr_dentry;
+	inode_t curr_inode;	
+    uint8_t test_buf[MAX_FILE_NAME];
+	char test_dir[] = ".";
+	int32_t test_fd = 2;
+	int32_t num_bytes_to_read = MAX_FILE_NAME; 
+	int i =0;
+	clear();
+	dir_open((const uint8_t*) test_dir);
+
+	while(dir_read(test_fd, test_buf, num_bytes_to_read) > 0) {
+		printf("file_name: ");
+		print_filename(test_buf);
+		read_dentry_by_name(test_buf, &curr_dentry);
+		curr_inode = *((inode_t*)(inode_block + (curr_dentry.inode_num)));
+		uint32_t size = dir_read2(i);
+		printf("  file_type: %d, file_size: %d", curr_dentry.file_type, size);
+		printf("\n");
+		i++;
+	}
+
+	if(dir_write(test_fd, test_buf, num_bytes_to_read) != -1) {
+		return FAIL;
+	}
+
+	dir_close(test_fd);
+	
+	return PASS;
+}
+
+int fs_read_long_name_test( void )
+{
+	TEST_HEADER;
+	dentry_t test_dentry;
+	unsigned int result;
+	char test_name[] = "verylargetextwithverylongname.txt";
+	result = read_dentry_by_name((const uint8_t*) test_name, &test_dentry);
+
+	if (result == -1) {
+		return FAIL;
+	} else {
+		return PASS;
+	}	
+}
+
+int read_test1() {
+	clear();
+	// TEST_HEADER;
+	dentry_t test;
+	char buff[40000] = {'\0'};
+	int i;
+	int byte_counter;
+	read_dentry_by_name((uint8_t*)"frame0.txt",&test);
+
+	byte_counter = read_data(test.inode_num,0,(uint8_t*)buff,10000); 
+	printf("read %d bytes\n",byte_counter);
+	terminal_write(0, buff, byte_counter);
+	return PASS;
+}
+
+int read_test2() {
+	clear();
+	// TEST_HEADER;
+	dentry_t test;
+	char buff[40000] = {'\0'};
+	int i;
+	int byte_counter;
+	read_dentry_by_name((uint8_t*)"verylargetextwithverylongname.txt",&test);
+
+	byte_counter = read_data(test.inode_num,0,(uint8_t*)buff,10000); 
+	printf("read %d bytes\n",byte_counter);
+	terminal_write(0, buff, byte_counter);
+	return PASS;
+}
+
+int read_test3() {
+	clear();
+	// TEST_HEADER;
+	dentry_t test;
+	char buff[40000] = {'\0'};
+	int i;
+	int byte_counter;
+	read_dentry_by_name((uint8_t*)"shell",&test);
+
+	byte_counter = read_data(test.inode_num,0,(uint8_t*)buff,10000); 
+	printf("read %d bytes\n",byte_counter);
+	terminal_write(0, buff, byte_counter);
+	return PASS;
+}
+
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -383,9 +547,19 @@ void launch_tests(){
 
 	// TEST_OUTPUT("Read test", read_test());
 	
+	TEST_OUTPUT("Read name test", read_name_test());
+	TEST_OUTPUT("Read invalid name test", read_inval_name_test());
+	TEST_OUTPUT("Read data test", read_data_test((uint8_t*)"frame0.txt"));
+	TEST_OUTPUT("Read data test", read_data_test((uint8_t*)"verylargetextwithverylongname.txt"));
+	TEST_OUTPUT("Read data test", read_data_test((uint8_t*)"shell"));
+	TEST_OUTPUT("Read test 1", read_test1());
+	TEST_OUTPUT("Read test 2", read_test2());
+	TEST_OUTPUT("Read test 3", read_test3());
+
 	// TEST_OUTPUT("RTC Write Input Test", rtc_write_test());
 	// TEST_OUTPUT("RTC Driver Test", rtc_driver_test_timer());
 	// TEST_OUTPUT("RTC Driver Test", rtc_driver_test('0'));
+	
 	
 	while (1); //freezes the kernel so we can see the output
 }
