@@ -477,7 +477,6 @@ int read_test1() {
 	// TEST_HEADER;
 	dentry_t test;
 	char buff[40000] = {'\0'};
-	int i;
 	int byte_counter;
 	read_dentry_by_name((uint8_t*)"frame0.txt",&test);
 
@@ -492,7 +491,6 @@ int read_test2() {
 	// TEST_HEADER;
 	dentry_t test;
 	char buff[40000] = {'\0'};
-	int i;
 	int byte_counter;
 	read_dentry_by_name((uint8_t*)"verylargetextwithverylongname.txt",&test);
 
@@ -507,7 +505,6 @@ int read_test3() {
 	// TEST_HEADER;
 	dentry_t test;
 	char buff[40000] = {'\0'};
-	int i;
 	int byte_counter;
 	read_dentry_by_name((uint8_t*)"shell",&test);
 
