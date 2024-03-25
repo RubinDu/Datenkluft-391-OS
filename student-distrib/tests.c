@@ -187,6 +187,63 @@ int rtc_test(int32_t rate)
 	return PASS;
 }
 
+/* all_paging
+ * 
+ * Dereference all valid memory addresses
+ * Inputs: None
+ * Outputs: PASS
+ * Side Effects: None
+ * Coverage: Paging
+ * Files: paging.h/c
+ */
+int all_paging(){
+	int i;
+	char val;
+	for (i = 0x400000; i < 0x800000; i++)
+		val = *(char*)i;
+	for (i = 0xB8000; i < 0xB9000; i++)
+		val = *(char*)i;
+	return PASS;
+}
+
+
+/* Checkpoint 2 tests */
+/* terminal_test
+ * 
+ * read from and then write to terminal
+ * Inputs: None
+ * Outputs: PASS
+ * Side Effects: None
+ * Coverage: Terminal, Keyboard
+ * Files: terminal.h/c, keyboard.h/c
+ */
+int terminal_test(){
+	TEST_HEADER;
+	char *buf[128];
+	memset(buf, 0, 128);
+	terminal_read(0, buf, 64);
+	terminal_write(0, buf, 64);
+	return PASS;
+}
+
+/* read_test
+ * 
+ * read from terminal and output bytes read
+ * Inputs: None
+ * Outputs: PASS
+ * Side Effects: None
+ * Coverage: Terminal, Keyboard
+ * Files: terminal.h/c, keyboard.h/c
+ */
+int read_test(){
+    TEST_HEADER;
+    char *buf[128];             // buffer to store input, max 128 bytes
+    memset(buf, 0, 128);
+    printf("Read %d bytes\n", terminal_read(0, buf, 128));
+    return PASS;
+}
+
+
 /* rtc_driver_test
  * 
  * test open, close, read, write functions of rtc
@@ -256,7 +313,6 @@ int rtc_driver_test_timer()
 	return PASS;
 }
 
-
 /* rtc_write_test
  * 
  * test write with invalid input
@@ -297,45 +353,6 @@ int rtc_write_test()
 	return PASS;
 }
 
-
-/* all_paging
- * 
- * Dereference all valid memory addresses
- * Inputs: None
- * Outputs: PASS
- * Side Effects: None
- * Coverage: Paging
- * Files: paging.h/c
- */
-int all_paging(){
-	int i;
-	char val;
-	for (i = 0x400000; i < 0x800000; i++)
-		val = *(char*)i;
-	for (i = 0xB8000; i < 0xB9000; i++)
-		val = *(char*)i;
-	return PASS;
-}
-
-
-/* Checkpoint 2 tests */
-/* terminal_test
- * 
- * read from and then write to terminal
- * Inputs: None
- * Outputs: PASS
- * Side Effects: None
- * Coverage: Terminal, Keyboard
- * Files: terminal.h/c, keyboard.h/c
- */
-int terminal_test(){
-	TEST_HEADER;
-	char *buf[128];
-	memset(buf, 0, 128);
-	terminal_read(0, buf, 64);
-	terminal_write(0, buf, 64);
-	return PASS;
-}
 /* Checkpoint 3 tests */
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
@@ -343,7 +360,7 @@ int terminal_test(){
 
 /* Test suite entry point */
 void launch_tests(){
-	TEST_OUTPUT("idt_test", idt_test());
+	// TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
 	//TEST_OUTPUT("Invalid opcode exception test", EXP6_test());
 	//TEST_OUTPUT("Missing idt entry test", Missing_idt_test());
@@ -355,12 +372,20 @@ void launch_tests(){
 	//TEST_OUTPUT("IRQ enable test", irq_enable_test(100));
 	//TEST_OUTPUT("IRQ disable test", irq_disable_test(1));
 	// TEST_OUTPUT("All paging test", all_paging());
+
+
+	
+    /* **************************************************
+     * *           Checkpoint #2 Testcases              *
+     * **************************************************/
 	// while (1)
 	// 	TEST_OUTPUT("Terminal test", terminal_test());
 
-	TEST_OUTPUT("RTC Write Input Test", rtc_write_test());
-	TEST_OUTPUT("RTC Driver Test", rtc_driver_test_timer());
-	TEST_OUTPUT("RTC Driver Test", rtc_driver_test('0'));
+	// TEST_OUTPUT("Read test", read_test());
+	
+	// TEST_OUTPUT("RTC Write Input Test", rtc_write_test());
+	// TEST_OUTPUT("RTC Driver Test", rtc_driver_test_timer());
+	// TEST_OUTPUT("RTC Driver Test", rtc_driver_test('0'));
 	
 	while (1); //freezes the kernel so we can see the output
 }
