@@ -1,19 +1,5 @@
 #include "rtc.h"
 
-#define MIN_RATE 6      /* as the instructor said, there would be problem a*/
-#define MAX_RATE 15     /* the maximum rate, which corresponds to 2 Hz, or 0.5 s/int*/
-
-#define MIN_FREQUENCY (0x8000 >> (MAX_RATE - 1)) /* 2 Hz */
-#define MAX_FREQUENCY (0x8000 >> (MIN_RATE - 1)) /* 1024 Hz*/
-
-uint32_t rtc_occurred;
-
-volatile struct rtc_info_t {
-    int32_t enabled; /* 1 if rtc is enabled, 0 otherwise */
-    int32_t current; /* the current progress to a milestone */
-    int32_t frequency; /* how many interrupts a logical rtc interrupt should occur */
-} rtc_info;
-
 /*
 * rtc_init
 *   DESCRIPTION: Initialize the RTC
@@ -44,11 +30,11 @@ void rtc_init(){
 */
 void rtc_handler(){
     cli();
-    outb(REG_C, RTC_COMMAND); // Select and flush Register C
+    outb(REG_C, RTC_COMMAND); /* throw away the value, or it would continue waiting */
     inb(RTC_DATA);
     if (rtc_info.enabled) {
         if (rtc_info.current <= 0) {
-            rtc_info.current = rtc_info.frequency;
+            rtc_info.current = rtc_info.frequency - 1;
         } else {
             --rtc_info.current;
         }
@@ -79,17 +65,43 @@ int32_t rtc_set_rate(int32_t rate){
     return 0;
 }
 
+/**
+ * rtc_open
+ * DESCRIPTION: Creates an rtc file
+ * INPUTS: filename - ignored
+ * OUTPUTS: none
+ * RETURN: 0 after creation
+ * SIDE EFFECTS: If another rtc is already open, this would reset the frequency
+ */
 int32_t rtc_open(const uint8_t* filename){
     rtc_info.enabled = 1;
     rtc_info.frequency = MAX_FREQUENCY / MIN_FREQUENCY;
     return 0;
 }
 
+/**
+ * rtc_open
+ * DESCRIPTION: Closes an rtc file
+ * INPUTS: fd - ignored
+ * OUTPUTS: none
+ * RETURN: 0 after closing
+ * SIDE EFFECTS: none
+ */
 int32_t rtc_close(int32_t fd){
     rtc_info.enabled = 0;
     return 0;
 }
 
+/**
+ * rtc_write
+ * DESCRIPTION: Resets the frequency of an rtc clock
+ * INPUTS: fd - ignored
+ *         buf - a pointer of an int32_t frequency, must be power of 2
+ *         nbytes - the size of the buffer, must be sizeof(int32_t)
+ * OUTPUTS: none
+ * RETURN: 0 if scuccessfully, -1 otherwise
+ * SIDE EFFECTS: none
+ */
 int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes){
     if (nbytes != sizeof(int32_t) || buf == NULL) { /* the size or the buffer is incorrect */
         return -1;
@@ -104,10 +116,19 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes){
     return 0;
 }
 
+/**
+ * rtc_read
+ * DESCRIPTION: Checks if a logical rtc interrupt has occurred
+ * INPUTS: fd - ignored
+ *         buf - ignored
+ *         nbytes - ignored
+ * OUTPUTS: none
+ * RETURN: 0 if rtc interrupt has occurred, wait otherwise
+ * SIDE EFFECTS: none
+ */
 int32_t rtc_read(int32_t fd, void* buf, int32_t nbytes){
     while (1) {
         if (rtc_info.enabled && rtc_info.current == 0) {
-            // printf("Interrupt Reached\n");
             --rtc_info.current;
             return 0;
         }

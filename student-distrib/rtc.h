@@ -15,12 +15,37 @@
 
 #define RTC_IRQ         8
 
+#define MIN_RATE 7      /* as the instructor said, there would be problem a*/
+#define MAX_RATE 15     /* the maximum rate, which corresponds to 2 Hz, or 0.5 s/int*/
+
+#define MIN_FREQUENCY (0x8000 >> (MAX_RATE - 1)) /* 2 Hz */
+#define MAX_FREQUENCY (0x8000 >> (MIN_RATE - 1)) /* 512 Hz*/
+
+struct rtc_info_t {
+    volatile int32_t enabled; /* 1 if rtc is enabled, 0 otherwise */
+    volatile int32_t current; /* the current progress to a milestone */
+    volatile int32_t frequency; /* how many interrupts a logical rtc interrupt should occur */
+} rtc_info;
+
+/* initializes the rtc driver */
 void rtc_init();
+
+/* rtc interrupt handler */
 void rtc_handler();
+
+/* opens an rtc file */
 int32_t rtc_open(const uint8_t* filename);
+
+/* closes an rtc file */
 int32_t rtc_close(int32_t fd);
+
+/* updates the frequency of the rtc */
 int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes);
+
+/* returns only when rtc interrupt occurs */
 int32_t rtc_read(int32_t fd, void* buf, int32_t nbytes);
+
+/* set the rate of the rtc driver */
 int32_t rtc_set_rate(int32_t rate);
 
 

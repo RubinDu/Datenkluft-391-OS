@@ -190,44 +190,72 @@ int rtc_test(int32_t rate)
 /* rtc_driver_test
  * 
  * test open, close, read, write functions of rtc
- * Inputs: none
+ * Inputs: ch - printed character
  * Outputs: PASS
  * Side Effects: none
  * Coverage: RTC
  * Files: rtc.c/h
  */
-int rtc_driver_test()
+int rtc_driver_test(char ch)
 {
 	TEST_HEADER;
 	rtc_open(NULL);
 
-	int32_t i;
+	int32_t freq, i, j, max_count = 10;
+	char seq[MAX_RATE + 1] = {ch, '\0'};
 
-	printf("0s\n");
-	for (i = 10; i > 0; --i) {
-		rtc_read(NULL, NULL, NULL);
-		if (!(i & 1)) {
-			printf("Interrupt %d\n", i >> 1);
+	for (freq = MIN_FREQUENCY, i = 1; freq <= MAX_FREQUENCY; freq = (freq << 1), ++i, max_count = max_count << 1) {
+		clear();
+		seq[i] = ++ch;
+		rtc_write(NULL, &freq, sizeof(int32_t));
+
+		for (j = 0; j < max_count; ++j) {
+			printf("Frequency: %d #%d ", freq, j);
+			printf(seq);
+			printf("\n");
+			rtc_read(NULL, NULL, NULL);
 		}
 	}
-	printf("5s\n");
-
-	i = 0x100;
-	rtc_write(NULL, &i, sizeof(int32_t));
-
-	printf("0s\n");
-	for (i = 0x500; i >= 0; --i) {
-		rtc_read(NULL, NULL, NULL);
-		if (!(i & 0xFF)) {
-			printf("Interrupt %d\n", i >> 8);
-		}
-		// printf("Interrupt %d\n", i);
-	}
-	printf("5s\n");
 
 	rtc_close(NULL);
 	return PASS;
 }
+
+/* rtc_driver_test_timer
+ * 
+ * Sets the rate of the RTC
+ * Inputs: rate
+ * Outputs: PASS
+ * Side Effects: Sets the rate of the RTC if it is valid
+ * Coverage: RTC
+ * Files: rtc.c/h
+ */
+int rtc_driver_test_timer()
+{
+	TEST_HEADER;
+	rtc_open(NULL);
+
+	int32_t i, frequency = 0x100;
+	printf("Default Frequency: 0\n");
+	for (i = 1; i <= 16; ++i) { /* 8 seconds total, 2 Hz * 16 = 8s */
+		rtc_read(NULL, NULL, NULL);
+		if (!(i & 1))
+			printf("Default Frequency: %d\n", i >> 1);
+	}
+
+	printf("\n");
+	rtc_write(NULL, &frequency, sizeof(int32_t));
+	printf("Frequency %d : 0\n", frequency);
+	for (i = 1; i <= 0x2000; ++i) { /* */
+		rtc_read(NULL, NULL, NULL);
+		if (!(i & 0xFF))
+			printf("Frequency %d : %d\n", frequency, i >> 8);
+	}
+
+	rtc_close(NULL);
+	return PASS;
+}
+
 
 /* rtc_write_test
  * 
@@ -243,26 +271,26 @@ int rtc_write_test()
 	TEST_HEADER;
 	rtc_open(NULL);
 	int32_t ref;
-	if (rtc_write(NULL, NULL, NULL) != -1) {
+	if (rtc_write(NULL, NULL, NULL) != -1) { 			/* nullptr input */
 		return FAIL;
 	}
 	ref = 0xECE391;
-	if (rtc_write(NULL, &ref, sizeof(int32_t)) != -1) {
+	if (rtc_write(NULL, &ref, sizeof(int32_t)) != -1) { /* not power of 2 */
 		return FAIL;
 	}
 	ref = 0x8000;
-	if (rtc_write(NULL, &ref, sizeof(int32_t)) != -1) {
+	if (rtc_write(NULL, &ref, sizeof(int32_t)) != -1) { /* too large */
 		return FAIL;
 	}
 	ref = -0x8000;
-	if (rtc_write(NULL, &ref, sizeof(int32_t)) != -1) {
+	if (rtc_write(NULL, &ref, sizeof(int32_t)) != -1) { /* too small */
 		return FAIL;
 	}
 	ref = 0x100;
-	if (rtc_write(NULL, &ref, sizeof(int32_t)) != 0) {
+	if (rtc_write(NULL, &ref, sizeof(int32_t)) != 0) {  /* correct output */
 		return FAIL;
 	}
-	if (rtc_write(NULL, &ref, 0) != -1) {
+	if (rtc_write(NULL, &ref, 0) != -1) {				/* invalid size */
 		return FAIL;
 	}
 	rtc_close(NULL);
@@ -315,8 +343,6 @@ int terminal_test(){
 
 /* Test suite entry point */
 void launch_tests(){
-	int32_t ref;
-
 	TEST_OUTPUT("idt_test", idt_test());
 	//TEST_OUTPUT("Div by 0 exception test", EXP0_test());
 	//TEST_OUTPUT("Invalid opcode exception test", EXP6_test());
@@ -333,7 +359,8 @@ void launch_tests(){
 	// 	TEST_OUTPUT("Terminal test", terminal_test());
 
 	TEST_OUTPUT("RTC Write Input Test", rtc_write_test());
-	TEST_OUTPUT("RTC Driver Test", rtc_driver_test());
+	TEST_OUTPUT("RTC Driver Test", rtc_driver_test_timer());
+	TEST_OUTPUT("RTC Driver Test", rtc_driver_test('0'));
 	
 	while (1); //freezes the kernel so we can see the output
 }
