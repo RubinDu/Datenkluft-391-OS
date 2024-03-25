@@ -48,6 +48,16 @@ Location: terminal.c
 Fix: end_of_line function should return immediately when terminal isn't read, so it won't corrupts data that it should't be accessing
 
 Author: Rubin Du
-Description: Spamming keyboard during write makes bugs the string written on terminal
+Description: Spamming keyboard during write may bugs the string written on terminal
 Location: terminal.c
 Fix: terminal write has to mask interrupts when write to prevent echoed keyboard input writing to screen
+
+Author: Shanbo Zhang
+Description: The logical interrupts occurred much slower than it should be.
+Location: rtc.c
+Fix: I used a counter, and read checks if it is 0. From frequency to 0, there is actually (frequency + 1) decrements. As I adjust the bound from 0 to 1, it works as desired. As the logical frequency increases, it would be slower, because extra decrements become more.
+
+Author: Stephen Cao
+Description: The file size is 0 for all files.
+Location: filesys.c
+Fix: I only access the a fixed location in the dentry struct, which means that the retrieved file size is the first file, which is ".". To get the file size of each file, I added the offset as a parameter of the function.
