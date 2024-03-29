@@ -173,7 +173,7 @@ void idt_init(){
         if (i==SYSTEMCALL){                 //if the given entry is for system call, set present, dpl to applications, and link to corresponding handler
             idt[i].present = 1;
             idt[i].dpl = 3;
-            SET_IDT_ENTRY(idt[i], systemcall_blank);
+            SET_IDT_ENTRY(idt[i], system_call);
         }
         if (i==KEYBOARD){                   //if the given entry is for keyboard, set present, dpl to kernel, and link to corresponding handler             
             idt[i].present = 1;

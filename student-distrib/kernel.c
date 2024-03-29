@@ -67,7 +67,7 @@ void entry(unsigned long magic, unsigned long addr) {
             }
             printf("\n");
             start_file = mod->mod_start;
-            start = mod->mod_start;
+            start = (uint32_t*)start_file;
             mod_count++;
             mod++;
         }
