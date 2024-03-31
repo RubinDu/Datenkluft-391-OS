@@ -21,6 +21,9 @@
 #define VIDEO_MEMORY_ADDR 0xB8000   /* video memory lies in here */
 #define VIDEO_MEMORY_PTE 0xB8       /* the index of video memory PTE in 0th page*/
 
+pde_t page_directory[PAGE_DIRECTORY_COUNT] __attribute__((aligned(PAGING_ALIGNMENT)));
+pte_t page_table[PAGE_TABLE_COUNT] __attribute__((aligned(PAGING_ALIGNMENT)));
+
 /* initialize the paging configuration of x86 */
 void paging_init();
 
