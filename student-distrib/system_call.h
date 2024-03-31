@@ -25,6 +25,7 @@ typedef struct pcb{
     char args[READBUF_SIZE];
 }pcb_t;
 
+pcb_t* current_pcb();
 
 int32_t halt(uint8_t status);
 int32_t execute(const uint8_t* command);

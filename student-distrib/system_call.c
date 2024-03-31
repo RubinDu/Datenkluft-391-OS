@@ -1,6 +1,7 @@
 #include "system_call.h"
 #include "lib.h"
 #include "paging.h"
+#include "filesys.h"
 
 //TODO CP2
 
@@ -111,5 +112,15 @@ int32_t set_handler(int32_t signum, void* handler_address){
 
 int32_t sigreturn(void){
     return -1;
+}
+
+pcb_t* current_pcb(){
+    uint32_t esp;
+    asm volatile ("                 \n\
+            movl %%esp, %0          \n\
+            "
+            : "=r"(esp)
+    );
+    return (pcb_t*)((0x800000-esp)/0x2000);
 }
 

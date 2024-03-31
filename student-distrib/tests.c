@@ -544,14 +544,14 @@ void launch_tests(){
 
 	// TEST_OUTPUT("Read test", read_test());
 	
-	TEST_OUTPUT("Read name test", read_name_test());
-	TEST_OUTPUT("Read invalid name test", read_inval_name_test());
-	TEST_OUTPUT("Read data test", read_data_test((uint8_t*)"frame0.txt"));
-	TEST_OUTPUT("Read data test", read_data_test((uint8_t*)"verylargetextwithverylongname.txt"));
-	TEST_OUTPUT("Read data test", read_data_test((uint8_t*)"shell"));
-	TEST_OUTPUT("Read test 1", read_test1());
-	TEST_OUTPUT("Read test 2", read_test2());
-	TEST_OUTPUT("Read test 3", read_test3());
+	// TEST_OUTPUT("Read name test", read_name_test());
+	// TEST_OUTPUT("Read invalid name test", read_inval_name_test());
+	// TEST_OUTPUT("Read data test", read_data_test((uint8_t*)"frame0.txt"));
+	// TEST_OUTPUT("Read data test", read_data_test((uint8_t*)"verylargetextwithverylongname.txt"));
+	// TEST_OUTPUT("Read data test", read_data_test((uint8_t*)"shell"));
+	// TEST_OUTPUT("Read test 1", read_test1());
+	// TEST_OUTPUT("Read test 2", read_test2());
+	// TEST_OUTPUT("Read test 3", read_test3());
 
 	// TEST_OUTPUT("RTC Write Input Test", rtc_write_test());
 	// TEST_OUTPUT("RTC Driver Test", rtc_driver_test_timer());
