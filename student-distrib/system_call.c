@@ -71,6 +71,7 @@ int32_t execute(const uint8_t* command){
     
     page_directory[USER_ENTRY].MB.present=1;
     page_directory[USER_ENTRY].MB.user_supervisor=1;
+    page_directory[USER_ENTRY].val|=0x400000+i*0x400000;
 
     //User-level Program Loader 
     //Create Process Control Block
