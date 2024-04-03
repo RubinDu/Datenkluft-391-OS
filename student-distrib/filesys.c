@@ -1,6 +1,9 @@
 #include "filesys.h"
 
 file_descriptor_t global[8];
+uint32_t dir_pos=0;
+uint32_t file_size = 0;
+
 /*
 * file_system_init
 *   DESCRIPTION: Initialize the file system
@@ -10,12 +13,14 @@ file_descriptor_t global[8];
 *   SIDE EFFECTS: Initialize the file system
 */
 void file_system_init(uint32_t boot_addr){
-    boot_block = (boot_block_t*)boot_addr;
-    inode_block = (inode_t*)(boot_addr + 1);
+    void* ptr = (void*)boot_addr;
+    boot_block = (boot_block_t*)ptr;
+    inode_block = (inode_t*)(boot_block + 1);
     dentry_block = boot_block->dir_entries_arr;
-    data_block = (data_block_t*)(boot_addr + 1 + boot_block->num_inodes);
+    data_block = (data_block_t*)(boot_block + boot_block->num_inodes + 1);
 
 }
+
 /*
 * read_dentry_by_name
 *   DESCRIPTION: Read the directory entry by name
@@ -26,19 +31,21 @@ void file_system_init(uint32_t boot_addr){
 *   SIDE EFFECTS: none
 */
 int32_t read_dentry_by_name(const uint8_t* fname, dentry_t* dentry){
-    if(fname == NULL){
+    int i;
+    if(fname == NULL || strlen((int8_t*)fname) > MAX_FILE_NAME+1){
         return -1;
     }
-    int i;
+
     for(i = 0; i < boot_block->num_dir_entries; i++){
         if(strncmp((int8_t*)fname, (int8_t*)dentry_block[i].file_name, MAX_FILE_NAME) == 0){
             *dentry = dentry_block[i];
-            f_size = inode_block->file_size;
+            // f_size = inode_block->file_size;
             return 0;
         }
     }
     return -1;
 }
+
 /*
 * read_dentry_by_index
 *   DESCRIPTION: Read the directory entry by index
@@ -55,6 +62,7 @@ int32_t read_dentry_by_index (uint32_t index, dentry_t* dentry){
     *dentry = dentry_block[index];
     return 0;
 }
+
 /*
 *   read_data
 *   DESCRIPTION: Read the data of the file
@@ -67,35 +75,44 @@ int32_t read_dentry_by_index (uint32_t index, dentry_t* dentry){
 *   SIDE EFFECTS: none
 */
 int32_t read_data (uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t length){
-	int i;
+	int i=0;
+    uint32_t data_block_num;
+    uint32_t data_block_offset;
+    uint32_t origin_num_data = boot_block->num_data_blocks;
+    inode_t* inode_block = &(boot_block[inode+1]); //get current inode block
 
-	if (inode>=boot_block->num_inodes || inode<0){
-	    return -1;
-	}
-	 
-	inode_t* inode_block;
-	inode_block = (inode_t*)boot_block+inode+1;
-	 
-	uint32_t block_num = offset/BLOCK_SIZE;
-	uint32_t block_offset = offset%BLOCK_SIZE;
-	uint8_t* data_ptr = (uint8_t*)(boot_block + boot_block->num_inodes + 1 + inode_block->data_block_num[block_num])+block_offset;	 
-	for (i=0;i<length;i++){
+	if (inode>=boot_block->num_inodes+1 || inode<0) return -1; // invalid inode number
+    if(offset >= inode_block->file_size) return 0; // offset is larger than file size
+
+	data_block_num = offset/BLOCK_SIZE;
+	data_block_offset = offset%BLOCK_SIZE;
+    
+    // get the current data block
+	uint8_t* curr_data = &boot_block[boot_block->num_inodes+1+inode_block->data_block_num[data_block_num]+data_block_offset];
+    
+	// for (i=0;i<length;i++){
+    while(i<length){
+        // check if the offset is larger than the file size, yes exit
 		if (i+offset >= inode_block->file_size){
 			return i;	
 		}
-		buf[i] = *data_ptr;
-		block_offset++;
+        // copy the data from data block to the buffer
+        memcpy(buf + i, curr_data, 1);
+		data_block_offset++;
 
-		if (block_offset%BLOCK_SIZE==0){
-			block_num++;
-			if (inode_block->data_block_num[block_num]>=boot_block->num_data_blocks){
-				return -1;
-			}
-			data_ptr = (uint8_t*)(boot_block + boot_block->num_inodes + 1 + inode_block->data_block_num[block_num]);
+        // check if the data block offset is larger than the block size
+		if (data_block_offset%BLOCK_SIZE==0){
+            // get the next data block number for index
+			data_block_num++;
+            // check if the data block number is valid
+			if (inode_block->data_block_num[data_block_num]>=origin_num_data) return -1;
+            // get the next data block
+			curr_data = &boot_block[boot_block->num_inodes+1+inode_block->data_block_num[data_block_num]];
 		}
 		else{
-		    data_ptr++;
-		} 
+		    curr_data++;
+		}
+        i++;
 	}
 	return length;
 }
@@ -128,24 +145,15 @@ int32_t file_open (const uint8_t* filename){
 */
 
 int32_t file_read (int32_t fd, void* buf, int32_t nbytes){
-    // int32_t bytes_read;
-    // int32_t inode_index;
-    // int32_t file_position;
-    // file_descriptor_t file_desc = global[fd];
-    // inode_index = file_desc.inode;
-    // file_position = file_desc.file_position;
 
-    // bytes_read = read_data(inode_index, file_position, (uint8_t*)buf, nbytes);
-    // file_desc.file_position += bytes_read;
-    // global[fd] = file_desc;
-    // return bytes_read;
-    uint32_t bytes_read;
-    if(dentry_block->file_type ==2){
-        bytes_read = read_data(boot_block->num_inodes, 0, buf, inode_block->file_size);
-        return 0;
-    }
-    return -1;
+    pcb_t* curr_pcb = current_pcb();
+
+    uint32_t inode_num = curr_pcb->file_arr[fd].inode;
+    uint32_t pos = curr_pcb->file_arr[fd].file_position;
+
+    return read_data(inode_num, pos, buf, nbytes);
 }
+
 /*
 *   file_write
 *   DESCRIPTION: Write the file
@@ -159,6 +167,7 @@ int32_t file_read (int32_t fd, void* buf, int32_t nbytes){
 int32_t file_write (int32_t fd, const void* buf, int32_t nbytes){
     return -1; // read only
 }
+
 /*
 *   file_close
 *   DESCRIPTION: Close the file
@@ -189,30 +198,6 @@ int32_t dir_open (const uint8_t* filename){
 }
 
 /*
-*   dir_read
-*   DESCRIPTION: Read the directory
-*   INPUTS: fd - the file descriptor
-*           buf - the buffer to store the data
-*           nbytes - the number of bytes to read
-*   OUTPUTS: buf - the buffer to store the data
-*   RETURN VALUE: 1 if success, 0 if fail
-*   SIDE EFFECTS: none
-*/
-int32_t dir_read (int32_t fd, void* buf, int32_t nbytes){
-    int32_t bytes_read = 0;
-    int32_t dir_position;
-    file_descriptor_t file_desc = global[fd];
-    dir_position = file_desc.file_position;
-    if(dir_position >= boot_block->num_dir_entries){
-        return 0;
-    } 
-    memcpy(buf, dentry_block[dir_position].file_name, MAX_FILE_NAME);
-    file_desc.file_position++;
-    global[fd] = file_desc;
-    return 1;
-}
-
-/*
 *   dir_read2
 *   DESCRIPTION: Read the directory
 *   INPUTS: offset - the offset of the directory
@@ -220,14 +205,39 @@ int32_t dir_read (int32_t fd, void* buf, int32_t nbytes){
 *   RETURN VALUE: the size of the file
 *   SIDE EFFECTS: none
 */
-int32_t dir_read2 (uint32_t offset){
-    uint32_t num_inode;
-    memcpy(&num_inode, (int8_t*)(start)+100+64*offset, 4);
-    int8_t* addr = (int8_t*)start+4096+(num_inode*4096);
-    uint32_t file_size =0;
-    memcpy(&file_size, addr, 4);
-    return file_size;
+int32_t dir_read(int32_t fd, void* buf, int32_t nbytes){
+    int rev;
+    // int i;
+    dentry_t dir_entry;
+
+    if (buf == NULL || dir_pos >= boot_block->num_dir_entries){
+        dir_pos = 0;
+        return 0;
+    }
+
+    dir_entry = boot_block->dir_entries_arr[dir_pos];
+    dir_pos ++;
+
+    memcpy(buf,&dir_entry.file_name,32);
+
+    // printf("file_name: ");
+    // for (i = 0; i < strlen((int8_t*)dir_entry.file_name); i++){
+    //     printf("%c",dir_entry.file_name[i]);
+    // }
+    // file_size = read_data(dir_entry.inode_num, 0, buf, 10000);
+    int8_t* addr = (int8_t*)boot_block+BLOCK_SIZE+(dir_entry.inode_num*BLOCK_SIZE);
+    memcpy(&file_size, addr, 4); // 4 bytes for the size of the file
+
+    // printf("  file_type: %d, file_size: %d", dir_entry.file_type, file_size);
+    // printf("\n");
+
+    rev = strlen((int8_t*)dir_entry.file_name);
+    if (strlen((int8_t*)dir_entry.file_name) >= 32){
+        rev = 32;
+    }
+    return rev;
 }
+
 /*
 *   dir_write
 *   DESCRIPTION: Write the directory

@@ -15,7 +15,7 @@
 #include "filesys.h"
 
 #define RUN_TESTS 1
-uint32_t* start;
+
 /* Macros. */
 /* Check if the bit BIT in FLAGS is set. */
 #define CHECK_FLAG(flags, bit)   ((flags) & (1 << (bit)))
@@ -67,7 +67,7 @@ void entry(unsigned long magic, unsigned long addr) {
             }
             printf("\n");
             start_file = mod->mod_start;
-            start = (uint32_t*)start_file;
+
             mod_count++;
             mod++;
         }

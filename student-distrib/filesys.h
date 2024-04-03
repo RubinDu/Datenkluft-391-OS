@@ -42,29 +42,10 @@ typedef struct {
 } data_block_t;
 
 
-typedef struct file_operations {
-    int (*open)(const uint8_t* filename);
-    int (*read)(int32_t fd, void* buf, int32_t nbytes);
-    int (*write)(int32_t fd, const void* buf, int32_t nbytes);
-    int (*close)(int32_t fd);
-} file_operations_t;
-
-typedef struct file_descriptor {
-    file_operations_t* file_ops;                    // Pointer to the file operations table
-    uint32_t inode;                                 // Inode number for the file
-    uint32_t file_position;                         // Current position in the file
-    uint32_t flags;                                 // Flags indicating the status of the file descriptor
-} file_descriptor_t;
-
-
 boot_block_t* boot_block;
 inode_t* inode_block;
 dentry_t* dentry_block;
 data_block_t* data_block;
-
-uint32_t f_size;
-
-extern uint32_t* start;
 
 void file_system_init(uint32_t boot_addr);
 
@@ -74,8 +55,7 @@ int32_t file_write (int32_t fd, const void* buf, int32_t nbytes);
 int32_t file_close (int32_t fd);
 
 int32_t dir_open (const uint8_t* filename);
-int32_t dir_read2 (uint32_t offset);
-int32_t dir_read (int32_t fd, void* buf, int32_t nbytes);
+int32_t dir_read(int32_t fd, void* buf, int32_t nbytes);
 int32_t dir_write (int32_t fd, const void* buf, int32_t nbytes);
 int32_t dir_close (int32_t fd);
 
