@@ -12,13 +12,13 @@
 #define MAGIC_NUM 0x7F454C46
 #define USER_ENTRY 32
 #define MAX_TASKS 2
-#define USER_CODE 0x8048000
-#define USER_CODE_LIMIT 0x3B8000 //4MB-0x48000
-#define USER_STACK 0x8400000-4
+#define PROGRAM_IMAGE_ADDR 0x8048000        /* virtual address of the program image */
+#define PROGRAM_IMAGE_LIMIT 0x3B8000        /* limit of size of program image */
+#define USER_STACK 0x8400000 - 4
 #define KSTACK_START 0x800000
 #define KSTACK_SIZE 0x2000
 
-#define GET_PCB(pid) ((pcb_t*)(KSTACK_START-KSTACK_SIZE-KSTACK_SIZE*pid))
+#define GET_PCB(pid) ((pcb_t*)(KSTACK_START - KSTACK_SIZE - KSTACK_SIZE * pid))
 
 static const struct file_operations stdin_op = {
     .open = terminal_open,
