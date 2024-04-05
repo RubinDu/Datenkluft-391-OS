@@ -1,6 +1,7 @@
 #include "terminal.h"
 #include "keyboard.h"
 #include "lib.h"
+#include "system_call.h"
 
 volatile static char idle = 1;   // 1 if terminal is idle, 0 if terminal is reading
 static void* readbuf;            // pointer to the read buffer

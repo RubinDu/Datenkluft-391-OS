@@ -6,6 +6,7 @@
 #include "paging.h"
 #include "keyboard.h"
 #include "rtc.h"
+#include "terminal.h"
 
 #define MAX_FILES 8
 #define MAGIC_SIZE 4
@@ -19,6 +20,17 @@
 #define KSTACK_SIZE 0x2000
 
 #define GET_PCB(pid) ((pcb_t*)(KSTACK_START-KSTACK_SIZE-KSTACK_SIZE*pid))
+
+struct pcb;
+typedef struct{
+    file_descriptor_t fd[MAX_FILES];
+    uint8_t present;
+    uint32_t pid;
+    struct pcb_t* parent_pcb;
+    uint32_t uesp;
+    uint32_t uebp;
+    char args[READBUF_SIZE];
+}pcb_t;
 
 static const struct file_operations stdin_op = {
     .open = terminal_open,
@@ -48,6 +60,13 @@ static const struct file_operations file_op = {
     .close = file_close
 };
 
+static const struct file_operations dir_op = {
+    .open = dir_open,
+    .read = dir_read,
+    .write = dir_write,
+    .close = dir_close
+};
+
 static const struct file_operations null_op = {
     .open = null_open,
     .read = null_read,
@@ -55,15 +74,10 @@ static const struct file_operations null_op = {
     .close = null_close
 };
 
-typedef struct pcb{
-    file_descriptor_t fd[MAX_FILES];
-    uint8_t present;
-    uint32_t pid;
-    pcb_t* parent_pcb;
-    uint32_t uesp;
-    uint32_t uebp;
-    char args[READBUF_SIZE];
-}pcb_t;
+int32_t null_read(int32_t fd, void* buf, int32_t nbytes);
+int32_t null_write(int32_t fd, const void* buf, int32_t nbytes);
+int32_t null_open(const uint8_t* filename);
+int32_t null_close(int32_t fd);
 
 pcb_t* current_pcb();
 
@@ -79,8 +93,4 @@ int32_t set_handler(int32_t signum, void* handler_address);
 int32_t sigreturn(void);
 
 
-int32_t null_read(int32_t fd, void* buf, int32_t nbytes);
-int32_t null_write(int32_t fd, const void* buf, int32_t nbytes);
-int32_t null_open(const uint8_t* filename);
-int32_t null_close(int32_t fd);
 #endif
