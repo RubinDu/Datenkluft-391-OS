@@ -89,7 +89,7 @@ int32_t read_data (uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t lengt
 	data_block_offset = offset%BLOCK_SIZE;
     
     // get the current data block
-	uint8_t* curr_data = (uint8_t*)&boot_block[boot_block->num_inodes+1+inode_block->data_block_num[data_block_num]+data_block_offset];
+	uint8_t* curr_data = (uint8_t*)&boot_block[boot_block->num_inodes+1+inode_block->data_block_num[data_block_num+data_block_offset]];
     
 	// for (i=0;i<length;i++){
     while(i<length){
