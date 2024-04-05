@@ -13,6 +13,7 @@
 #include "keyboard.h"
 #include "paging.h"
 #include "filesys.h"
+#include "system_call.h"
 
 #define RUN_TESTS 1
 

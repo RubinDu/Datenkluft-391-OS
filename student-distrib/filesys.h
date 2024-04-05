@@ -3,7 +3,6 @@
 
 #include "lib.h"
 #include "types.h"
-#include "system_call.h"
 
 
 #define MAX_FILE_NAME 32
@@ -41,6 +40,20 @@ typedef struct {
     uint32_t data_block[BLOCK_SIZE];
 } data_block_t;
 
+
+typedef struct file_operations {
+    int32_t (*open)(const uint8_t* filename);
+    int32_t (*read)(int32_t fd, void* buf, int32_t nbytes);
+    int32_t (*write)(int32_t fd, const void* buf, int32_t nbytes);
+    int32_t (*close)(int32_t fd);
+} file_operations_t;
+
+typedef struct file_descriptor {
+    file_operations_t* file_ops;                    // Pointer to the file operations table
+    uint32_t inode;                                 // Inode number for the file
+    uint32_t file_position;                         // Current position in the file
+    uint32_t flags;                                 // Flags indicating the status of the file descriptor
+} file_descriptor_t;
 
 boot_block_t* boot_block;
 inode_t* inode_block;

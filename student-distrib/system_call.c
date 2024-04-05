@@ -1,13 +1,10 @@
 #include "system_call.h"
 #include "lib.h"
-#include "paging.h"
-#include "filesys.h"
-#include "terminal.h"
 
 //TODO CP2
 
 int32_t halt(uint8_t status){
-    int i;
+    // int i;
 
     pcb_t* pcb = current_pcb();
     
@@ -141,7 +138,7 @@ int32_t execute(const uint8_t* command){
      * **************************************************/
     /* Create its own context switch stack */
     asm volatile (
-        "movw %0, %ds"  /* ds = USER_DS */
+        "movw %0, %%ds"  /* ds = USER_DS */
         "pushl %0"      /* USER_DS */
         "pushl %1"      /* USER_STACK */
         "pushfl"        /* eflags */
@@ -156,19 +153,58 @@ int32_t execute(const uint8_t* command){
 }
 
 int32_t read(int32_t fd, void* buf, int32_t nbytes){
-    return -1;
+    pcb_t* curr_pcb = current_pcb();
+    uint32_t result;
+    if(fd < 0 || fd >= MAX_FILES || curr_pcb->fd[fd].flags==0) return -1;
+    result = curr_pcb->fd[fd].file_ops->read(fd, buf, nbytes);
+    curr_pcb->fd[fd].file_position += result;
+    return result;
 }
 
 int32_t write(int32_t fd, const void* buf, int32_t nbytes){
-    return -1;
+    pcb_t* curr_pcb = current_pcb();
+    if(fd < 0 || fd >= MAX_FILES || curr_pcb->fd[fd].flags==0) return -1;
+    return curr_pcb->fd[fd].file_ops->write(fd, buf, nbytes);
 }
 
 int32_t open(const uint8_t* filename){
+    int i;
+    dentry_t dentry;
+    pcb_t* curr_pcb = current_pcb();
+
+    if(filename == NULL || read_dentry_by_name(filename, &dentry) == -1) return -1;
+
+    for(i=2; i<MAX_FILES; i++){
+        if( curr_pcb->fd[i].flags == 0){
+            curr_pcb->fd[i].flags = 1;
+            curr_pcb->fd[i].inode = dentry.inode_num;
+            curr_pcb->fd[i].file_position = 0;
+            switch(dentry.file_type){
+                case 0:
+                    curr_pcb->fd[i].file_ops = &rtc_op;
+                    break;
+                case 1:
+                    curr_pcb->fd[i].file_ops = &dir_op;
+                    break;
+                case 2:
+                    curr_pcb->fd[i].file_ops = &file_op;
+                    break;
+                default:
+                    break;
+            }
+            return 1;
+        }
+    }
     return -1;
+    
 }
 
 int32_t close(int32_t fd){
-    return -1;
+    pcb_t* curr_pcb = current_pcb();
+    if(fd < 2 || fd >= MAX_FILES || curr_pcb->fd[fd].flags==0) return -1;
+    curr_pcb->fd[fd].flags = 0;
+    curr_pcb->fd[fd].file_ops->close(fd);
+    return 0;
 }
 
 int32_t getargs(uint8_t* buf, int32_t nbytes){

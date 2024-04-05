@@ -1,4 +1,5 @@
 #include "filesys.h"
+#include "system_call.h"
 
 file_descriptor_t global[8];
 uint32_t dir_pos=0;
@@ -79,7 +80,7 @@ int32_t read_data (uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t lengt
     uint32_t data_block_num;
     uint32_t data_block_offset;
     uint32_t origin_num_data = boot_block->num_data_blocks;
-    inode_t* inode_block = &(boot_block[inode+1]); //get current inode block
+    inode_t* inode_block = (inode_t*)&(boot_block[inode+1]); //get current inode block
 
 	if (inode>=boot_block->num_inodes+1 || inode<0) return -1; // invalid inode number
     if(offset >= inode_block->file_size) return 0; // offset is larger than file size
@@ -88,7 +89,7 @@ int32_t read_data (uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t lengt
 	data_block_offset = offset%BLOCK_SIZE;
     
     // get the current data block
-	uint8_t* curr_data = &boot_block[boot_block->num_inodes+1+inode_block->data_block_num[data_block_num]+data_block_offset];
+	uint8_t* curr_data = (uint8_t*)&boot_block[boot_block->num_inodes+1+inode_block->data_block_num[data_block_num]+data_block_offset];
     
 	// for (i=0;i<length;i++){
     while(i<length){
@@ -107,7 +108,7 @@ int32_t read_data (uint32_t inode, uint32_t offset, uint8_t* buf, uint32_t lengt
             // check if the data block number is valid
 			if (inode_block->data_block_num[data_block_num]>=origin_num_data) return -1;
             // get the next data block
-			curr_data = &boot_block[boot_block->num_inodes+1+inode_block->data_block_num[data_block_num]];
+			curr_data = (uint8_t*)&boot_block[boot_block->num_inodes+1+inode_block->data_block_num[data_block_num]];
 		}
 		else{
 		    curr_data++;
@@ -148,8 +149,8 @@ int32_t file_read (int32_t fd, void* buf, int32_t nbytes){
 
     pcb_t* curr_pcb = current_pcb();
 
-    uint32_t inode_num = curr_pcb->file_arr[fd].inode;
-    uint32_t pos = curr_pcb->file_arr[fd].file_position;
+    uint32_t inode_num = curr_pcb->fd[fd].inode;
+    uint32_t pos = curr_pcb->fd[fd].file_position;
 
     return read_data(inode_num, pos, buf, nbytes);
 }

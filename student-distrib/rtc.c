@@ -1,4 +1,5 @@
 #include "rtc.h"
+#include "system_call.h"
 
 /*
 * rtc_init
