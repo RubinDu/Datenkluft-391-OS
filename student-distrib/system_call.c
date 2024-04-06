@@ -20,12 +20,14 @@ int32_t halt(uint8_t status){
 }
 
 int32_t execute(const uint8_t* command){
+    cli();
     int i, pid;
     uint8_t filename[READBUF_SIZE] = {0};   /* file name */
     uint8_t args[READBUF_SIZE] = {0};       /* arguments */
     dentry_t exec_dentry;           /* location of file name */
     uint32_t magic_check;           /* exec format check */
-    uint32_t eip;                   /* instruction ptr */
+    uint8_t entry[4];               /* instruction ptr */
+    uint32_t eip;
     pcb_t* pcb;
 
     /* **************************************************
@@ -91,13 +93,16 @@ int32_t execute(const uint8_t* command){
      * **************************************************/
     page_directory[USER_ENTRY].MB.present = 1;              /* 128MB -> user program */
     page_directory[USER_ENTRY].MB.user_supervisor = 1;      /* user can access */
-    page_directory[USER_ENTRY].val |= 0x400000 + pid * 0x400000; /* physical address: 0x400000 & 0x800000 */
+    page_directory[USER_ENTRY].MB.read_write = 1;           /* allows user to write (-_-|||) */
+    page_directory[USER_ENTRY].MB.page_base_address = 2 + pid; /* physical address: 0x400000 & 0x800000 */
 
     asm volatile (                  /* rewrite cr3 (pde[]) to empty tlb */
-        "movl %%cr3, %%eax"
-        "movl %%eax, %%cr3"
+        "pushl %%eax\n"
+        "movl %%cr3, %%eax\n"
+        "movl %0, %%cr3\n"
+        "popl %%eax\n"
         :
-        :
+        : "r" ((uint32_t)page_directory)
         : "%eax"
     );
 
@@ -129,21 +134,24 @@ int32_t execute(const uint8_t* command){
 
     memcpy(pcb->args, args, READBUF_SIZE); /* assign pcb->args */
     
-    tss.esp0 = KSTACK_START - KSTACK_SIZE * pid;
-    read_data(exec_dentry.inode_num, 24, (uint8_t*)&eip, 4);
+    read_data(exec_dentry.inode_num, 24, (uint8_t*)entry, 4);
+    eip = (((uint32_t)entry[3] << 24) | ((uint32_t)entry[2] << 16) | ((uint32_t)entry[1] << 8) | ((uint32_t)entry[0]));
 
+    tss.esp0 = KSTACK_START - KSTACK_SIZE * pid;
+    tss.ss0 = KERNEL_DS;
 
     /* **************************************************
      * *           Prepare for Context Switch           *
      * **************************************************/
     /* Create its own context switch stack */
     asm volatile (
-        "movw %0, %%ds"  /* ds = USER_DS */
-        "pushl %0"      /* USER_DS */
-        "pushl %1"      /* USER_STACK */
-        "pushfl"        /* eflags */
-        "pushl %2"      /* USER_CS */
-        "pushl %3"      /* eip */
+        "sti\n"
+        "mov %0, %%ds\n"  /* ds = USER_DS */
+        "pushl %0\n"      /* USER_DS */
+        "pushl %1\n"      /* USER_STACK */
+        "pushfl\n"        /* eflags */
+        "pushl %2\n"      /* USER_CS */
+        "pushl %3\n"      /* eip */
         "iret"
         :
         :"r"((uint32_t)USER_DS), "r"((uint32_t)USER_STACK), "r"((uint32_t)USER_CS), "r"(eip)
