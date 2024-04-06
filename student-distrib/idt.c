@@ -100,13 +100,13 @@ void EXPD(){
 void EXPE(){
     cli();
     clear();
-    // uint32_t page_fault_linear_addr;
-    // asm volatile (
-    //     "movl %%cr2, %0" : "=r" (page_fault_linear_addr)
-    //                      :
-    // );
-    // printf(" Exception: Page Fault, at 0x%08X\n", page_fault_linear_addr);
-    printf(" Exception: Page Fault\n");
+    uint32_t page_fault_linear_addr;
+    asm volatile (
+        "movl %%cr2, %0" : "=r" (page_fault_linear_addr)
+                         :
+    );
+    printf(" Exception: Page Fault, at %d\n", page_fault_linear_addr);
+    // printf(" Exception: Page Fault\n");
     while(1);
 }
 void EXPF(){

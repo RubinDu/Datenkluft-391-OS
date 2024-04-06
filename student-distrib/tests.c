@@ -441,8 +441,6 @@ void launch_tests(){
 	// 	TEST_OUTPUT("Terminal test", terminal_test());
 
 	// TEST_OUTPUT("Read test", read_test());
-	
-
 
 	// TEST_OUTPUT("test dentry_by_name", read_name_test((uint8_t*)"frame0.txt"));
 	// TEST_OUTPUT("test dentry_by_name", read_name_test((uint8_t*)"verylargetextwithverylongname.tx"));
@@ -454,7 +452,6 @@ void launch_tests(){
 	// TEST_OUTPUT("RTC Write Input Test", rtc_write_test());
 	// TEST_OUTPUT("RTC Driver Test", rtc_driver_test_timer());
 	// TEST_OUTPUT("RTC Driver Test", rtc_driver_test('0'));
-	
 	
 	while (1); //freezes the kernel so we can see the output
 }

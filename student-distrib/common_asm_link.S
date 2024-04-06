@@ -39,9 +39,9 @@ system_call:
     subl $1, %eax
     cmpl $9, %eax
     ja bad_sc
-    pushl %ebx
-    pushl %ecx
     pushl %edx
+    pushl %ecx
+    pushl %ebx
     call *sc_table(,%eax,4)
     addl $12, %esp
     movl %eax, 32(%esp)
