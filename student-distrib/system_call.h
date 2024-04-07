@@ -25,7 +25,7 @@ typedef struct pcb {
     file_descriptor_t fd[MAX_FILES];
     uint8_t present;
     uint32_t pid;
-    struct pcb_t* parent_pcb;
+    struct pcb* parent;
     uint32_t uesp;
     uint32_t uebp;
     char args[READBUF_SIZE];

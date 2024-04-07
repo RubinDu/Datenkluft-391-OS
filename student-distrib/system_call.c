@@ -4,23 +4,41 @@
 //TODO CP2
 
 int32_t halt(uint8_t status){
-    // int i;
-
+    int i;
     pcb_t* pcb = current_pcb();
-    
-    /* clear file desc */
-    
+
+    for (i = 0; i < MAX_FILES; ++i) {
+        pcb->fd[i].flags = 0; /* close the flags */
+    }
+
     pcb->present = 0;
 
-    page_directory[USER_ENTRY].MB.present = 0;
-    page_directory[USER_ENTRY].MB.user_supervisor = 0;
-    page_directory[USER_ENTRY].MB.page_base_address = USER_ENTRY;
+    if (pcb->parent) {
+        page_directory[USER_ENTRY].MB.page_base_address = 2 + pcb->parent->pid; /* shell */
+        tss.esp0 = KSTACK_START - KSTACK_SIZE * pcb->parent->pid;
+    } else {
+        page_directory[USER_ENTRY].MB.present = 0;
+        page_directory[USER_ENTRY].MB.read_write = 0;
+        page_directory[USER_ENTRY].MB.user_supervisor = 0;
+        page_directory[USER_ENTRY].MB.page_base_address = USER_ENTRY;
+        tss.esp0 = KSTACK_START;
+    }
+
+    tss.ss0 = KERNEL_DS;
+
+    asm volatile (
+        "movl $0, %%eax\n"
+        "movb %0, %%al\n"
+        "jmp exec_back\n"
+        :
+        : "r"(status)
+        : "%eax"
+    );
 
     return -1;
 }
 
 int32_t execute(const uint8_t* command){
-    cli();
     int i, pid;
     uint8_t filename[READBUF_SIZE] = {0};   /* file name */
     uint8_t args[READBUF_SIZE] = {0};       /* arguments */
@@ -99,10 +117,10 @@ int32_t execute(const uint8_t* command){
     asm volatile (                  /* rewrite cr3 (pde[]) to empty tlb */
         "pushl %%eax\n"
         "movl %%cr3, %%eax\n"
-        "movl %0, %%cr3\n"
+        "movl %%eax, %%cr3\n"
         "popl %%eax\n"
         :
-        : "r" ((uint32_t)page_directory)
+        :
         : "%eax"
     );
 
@@ -117,8 +135,7 @@ int32_t execute(const uint8_t* command){
      * **************************************************/
     /* creates the pcb */
     pcb = GET_PCB(pid);
-    if (pid) /* if the created pid is not shell, then we assign parent */
-        pcb->parent_pcb = current_pcb();
+    pcb->parent = pid ? current_pcb() : NULL;
     pcb->present = 1;
     pcb->pid = pid;
     
@@ -145,19 +162,20 @@ int32_t execute(const uint8_t* command){
      * **************************************************/
     /* Create its own context switch stack */
     asm volatile (
-        "sti\n"
-        "mov %0, %%ds\n"  /* ds = USER_DS */
+        "movw %0, %%ds\n"
         "pushl %0\n"      /* USER_DS */
         "pushl %1\n"      /* USER_STACK */
         "pushfl\n"        /* eflags */
         "pushl %2\n"      /* USER_CS */
         "pushl %3\n"      /* eip */
-        "iret"
+        "iret\n"
+        "exec_back:\n"
+        "leave\n"
+        "ret\n"
         :
         :"r"((uint32_t)USER_DS), "r"((uint32_t)USER_STACK), "r"((uint32_t)USER_CS), "r"(eip)
         :"memory"
     );
-    return 0;
 }
 
 int32_t read(int32_t fd, void* buf, int32_t nbytes){
