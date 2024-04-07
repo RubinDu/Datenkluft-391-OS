@@ -7,32 +7,31 @@ int32_t halt(uint8_t status){
     int i;
     pcb_t* pcb = current_pcb();
 
+    if (pcb->pid == 0) { /* the shell */
+        return -1;
+    }
+
     for (i = 0; i < MAX_FILES; ++i) {
         pcb->fd[i].flags = 0; /* close the flags */
     }
 
     pcb->present = 0;
 
-    if (pcb->parent) {
-        page_directory[USER_ENTRY].MB.page_base_address = 2 + pcb->parent->pid; /* shell */
-        tss.esp0 = KSTACK_START - KSTACK_SIZE * pcb->parent->pid;
-    } else {
-        page_directory[USER_ENTRY].MB.present = 0;
-        page_directory[USER_ENTRY].MB.read_write = 0;
-        page_directory[USER_ENTRY].MB.user_supervisor = 0;
-        page_directory[USER_ENTRY].MB.page_base_address = USER_ENTRY;
-        tss.esp0 = KSTACK_START;
-    }
+    page_directory[USER_ENTRY].MB.page_base_address = 2 + pcb->parent->pid; /* shell */
+    tss.esp0 = KSTACK_START - KSTACK_SIZE * pcb->parent->pid;
 
     tss.ss0 = KERNEL_DS;
 
     asm volatile (
+        "movl %%cr3, %%eax\n"
+        "movl %%eax, %%cr3\n"
+        "movl %1, %%ebp\n"
         "movl $0, %%eax\n"
         "movb %0, %%al\n"
         "jmp exec_back\n"
         :
-        : "r"(status)
-        : "%eax"
+        : "r"(status), "r"(pcb->parent->ebp)
+        : "%eax", "%ebp"
     );
 
     return -1;
@@ -140,14 +139,14 @@ int32_t execute(const uint8_t* command){
     pcb->pid = pid;
     
     /* setup stdin and stdout*/
-    pcb->fd[0].file_ops = &stdin_op;
+    pcb->fd[0].file_ops = (file_operations_t*)&stdin_op;
     pcb->fd[0].flags = 1;
-    pcb->fd[1].file_ops = &stdout_op;
+    pcb->fd[1].file_ops = (file_operations_t*)&stdout_op;
     pcb->fd[1].flags = 1;
 
     /* setup remaining fileop */
     for (i = 2; i < MAX_FILES; i++)
-        pcb->fd[i].file_ops = &null_op;
+        pcb->fd[i].file_ops = (file_operations_t*)&null_op;
 
     memcpy(pcb->args, args, READBUF_SIZE); /* assign pcb->args */
     
@@ -160,6 +159,12 @@ int32_t execute(const uint8_t* command){
     /* **************************************************
      * *           Prepare for Context Switch           *
      * **************************************************/
+    /* save the current ebp */
+    asm volatile(
+        "movl %%ebp, %0"
+        : "=r"(pcb->ebp)
+    );
+
     /* Create its own context switch stack */
     asm volatile (
         "movw %0, %%ds\n"
@@ -176,6 +181,8 @@ int32_t execute(const uint8_t* command){
         :"r"((uint32_t)USER_DS), "r"((uint32_t)USER_STACK), "r"((uint32_t)USER_CS), "r"(eip)
         :"memory"
     );
+
+    return 0;
 }
 
 int32_t read(int32_t fd, void* buf, int32_t nbytes){
@@ -207,13 +214,13 @@ int32_t open(const uint8_t* filename){
             curr_pcb->fd[i].file_position = 0;
             switch(dentry.file_type){
                 case 0:
-                    curr_pcb->fd[i].file_ops = &rtc_op;
+                    curr_pcb->fd[i].file_ops = (file_operations_t*)&rtc_op;
                     break;
                 case 1:
-                    curr_pcb->fd[i].file_ops = &dir_op;
+                    curr_pcb->fd[i].file_ops = (file_operations_t*)&dir_op;
                     break;
                 case 2:
-                    curr_pcb->fd[i].file_ops = &file_op;
+                    curr_pcb->fd[i].file_ops = (file_operations_t*)&file_op;
                     break;
                 default:
                     break;

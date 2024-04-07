@@ -26,8 +26,8 @@ typedef struct pcb {
     uint8_t present;
     uint32_t pid;
     struct pcb* parent;
-    uint32_t uesp;
-    uint32_t uebp;
+    uint32_t esp;
+    uint32_t ebp;
     char args[READBUF_SIZE];
 }pcb_t;
 
