@@ -40,27 +40,28 @@ int32_t halt(uint8_t status){
     asm volatile (
         "movl %%cr3, %%eax\n"   /* flushes the tlb*/
         "movl %%eax, %%cr3\n"
-        "movl %0, %%ebp\n"      /* restores the ebp */
         :
-        : "r"(pcb->ebp)
-        : "%eax", "%ebp"
+        :
+        : "%eax"
     );
 
     if (exception_occurred) {
         asm volatile(           /* exception occurred, %eax = 0x100 */
             "movl $0x100, %%eax\n"
+            "movl %0, %%ebp\n"      /* restores the ebp */
             :
-            :
-            : "%eax"
+            : "r"(pcb->ebp)
+            : "%eax", "%ebp"
         );
         exception_occurred = 0;
     } else {
         asm volatile(
             "movl $0, %%eax\n"
-            "movb %0, %%al\n"
+            "movb %b0, %%al\n"
+            "movl %1, %%ebp\n"      /* restores the ebp */
             :
-            : "r"(status)
-            : "%eax"
+            : "r"(status), "r"(pcb->ebp)
+            : "%eax", "%ebp"
         );
     }
 
@@ -200,7 +201,7 @@ int32_t execute(const uint8_t* command){
 
     /* Create its own context switch stack */
     asm volatile (
-        "movw %0, %%ds\n"
+        "movw %w0, %%ds\n"
         "pushl %0\n"      /* USER_DS */
         "pushl %1\n"      /* USER_STACK */
         "pushfl\n"        /* eflags */
