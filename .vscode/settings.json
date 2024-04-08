@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "ece391syscall.h": "c",
+        "ece391support.h": "c"
+    }
+}

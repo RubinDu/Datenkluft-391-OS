@@ -33,13 +33,13 @@ void rtc_handler(){
     cli();
     outb(REG_C, RTC_COMMAND); /* throw away the value, or it would continue waiting */
     inb(RTC_DATA);
-    if (rtc_info.enabled) { /* rtc must be enabled */
-        if (rtc_info.current <= 1) { /* logical interrupt occurred, we need to reset */
-            rtc_info.current = rtc_info.frequency;
-        } else { /* interrupt occurred, logical interrupt not occurred */
-            --rtc_info.current;
-        }
+    // if (rtc_info.enabled) { /* rtc must be enabled */
+    if (rtc_info.current <= 1) { /* logical interrupt occurred, we need to reset */
+        rtc_info.current = rtc_info.frequency;
+    } else { /* interrupt occurred, logical interrupt not occurred */
+        --rtc_info.current;
     }
+    // }
     send_eoi(RTC_IRQ);
     sti();
 }
@@ -75,7 +75,7 @@ int32_t rtc_set_rate(int32_t rate){
  * SIDE EFFECTS: If another rtc is already open, this would reset the frequency
  */
 int32_t rtc_open(const uint8_t* filename){
-    rtc_info.enabled = 1; /* we enable the rtc interrupt, then start counting ^_^ */
+    // rtc_info.enabled = 1; /* we enable the rtc interrupt, then start counting ^_^ */
     rtc_info.frequency = MAX_FREQUENCY / MIN_FREQUENCY;
     return 0;
 }
@@ -89,7 +89,7 @@ int32_t rtc_open(const uint8_t* filename){
  * SIDE EFFECTS: none
  */
 int32_t rtc_close(int32_t fd){
-    rtc_info.enabled = 0; /* we disable the rtc */
+    // rtc_info.enabled = 0; /* we disable the rtc */
     return 0;
 }
 
@@ -130,7 +130,7 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes){
 int32_t rtc_read(int32_t fd, void* buf, int32_t nbytes){
     while (1) {
         /* to return, rtc should be enabled, and the current counter should be zero */
-        if (rtc_info.enabled && rtc_info.current == 1) {
+        if (rtc_info.current == 1) {
             --rtc_info.current;
             return 0;
         }

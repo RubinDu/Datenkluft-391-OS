@@ -58,7 +58,7 @@ system_call:
     pushl %ebx
     call *sc_table(, %eax, 4)   # call specific functions
     addl $12, %esp
-    movl %eax, 32(%esp)         # the return value
+    # movl %eax, 32(%esp)         # the return value
     jmp sc_done
 
 bad_sc:

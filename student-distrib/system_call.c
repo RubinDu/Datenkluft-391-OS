@@ -1,40 +1,75 @@
 #include "system_call.h"
 #include "lib.h"
 
-//TODO CP2
+/* nonzero if exception occurs. */
+extern uint8_t exception_occurred;
 
+/**
+ * int32_t halt(uint8_t status):
+ * DESCRIPTION: a system call handler that when some process
+ *              wants to terminate, or generates some exception
+ * INPUTS: status -- the return value execute should get
+ * OUTPUTS: none
+ * RETURNS: never used
+ */
 int32_t halt(uint8_t status){
     int i;
     pcb_t* pcb = current_pcb();
-
-    if (pcb->pid == 0) { /* the shell */
-        return -1;
-    }
-
-    for (i = 0; i < MAX_FILES; ++i) {
-        pcb->fd[i].flags = 0; /* close the flags */
-    }
-
+    
+    /* **************************************************
+     * *            Reclaims Owned Resources            *
+     * **************************************************/
     pcb->present = 0;
+    for (i = 0; i < MAX_FILES; ++i) {
+        pcb->fd[i].flags = 0;
+    }
 
+    if (!pcb->parent) { /* if exit the shell, recreate it ^-^ */
+        pcb->present = 0;
+
+        execute((uint8_t*)"shell");
+    }
+
+    /* **************************************************
+     * *          Restore Parent Paging & TSS           *
+     * **************************************************/
     page_directory[USER_ENTRY].MB.page_base_address = 2 + pcb->parent->pid; /* shell */
     tss.esp0 = KSTACK_START - KSTACK_SIZE * pcb->parent->pid;
-
     tss.ss0 = KERNEL_DS;
 
     asm volatile (
-        "movl %%cr3, %%eax\n"
+        "movl %%cr3, %%eax\n"   /* flushes the tlb*/
         "movl %%eax, %%cr3\n"
-        "movl %1, %%ebp\n"
-        "movl $0, %%eax\n"
-        "movb %0, %%al\n"
-        "jmp exec_back\n"
+        "movl %0, %%ebp\n"      /* restores the ebp */
         :
-        : "r"(status), "r"(pcb->parent->ebp)
+        : "r"(pcb->ebp)
         : "%eax", "%ebp"
     );
 
-    return -1;
+    if (exception_occurred) {
+        asm volatile(           /* exception occurred, %eax = 0x100 */
+            "movl $0x100, %%eax\n"
+            :
+            :
+            : "%eax"
+        );
+        exception_occurred = 0;
+    } else {
+        asm volatile(
+            "movl $0, %%eax\n"
+            "movb %0, %%al\n"
+            :
+            : "r"(status)
+            : "%eax"
+        );
+    }
+
+    asm volatile(               /* we are logically in remaining part of */
+        "leave\n"               /* execute handler, because we reset ebp */
+        "ret\n"                 /* we return to execute actually.        */
+    );
+
+    return -1;                  /* never reaches here */
 }
 
 int32_t execute(const uint8_t* command){
@@ -114,10 +149,8 @@ int32_t execute(const uint8_t* command){
     page_directory[USER_ENTRY].MB.page_base_address = 2 + pid; /* physical address: 0x400000 & 0x800000 */
 
     asm volatile (                  /* rewrite cr3 (pde[]) to empty tlb */
-        "pushl %%eax\n"
         "movl %%cr3, %%eax\n"
         "movl %%eax, %%cr3\n"
-        "popl %%eax\n"
         :
         :
         : "%eax"
@@ -161,8 +194,8 @@ int32_t execute(const uint8_t* command){
      * **************************************************/
     /* save the current ebp */
     asm volatile(
-        "movl %%ebp, %0"
-        : "=r"(pcb->ebp)
+        "movl %%ebp, %0\n"
+        : "=g"(pcb->ebp)
     );
 
     /* Create its own context switch stack */
@@ -173,10 +206,8 @@ int32_t execute(const uint8_t* command){
         "pushfl\n"        /* eflags */
         "pushl %2\n"      /* USER_CS */
         "pushl %3\n"      /* eip */
+        "call_iret:\n"
         "iret\n"
-        "exec_back:\n"
-        "leave\n"
-        "ret\n"
         :
         :"r"((uint32_t)USER_DS), "r"((uint32_t)USER_STACK), "r"((uint32_t)USER_CS), "r"(eip)
         :"memory"
@@ -225,7 +256,7 @@ int32_t open(const uint8_t* filename){
                 default:
                     break;
             }
-            return 1;
+            return i;
         }
     }
     return -1;
