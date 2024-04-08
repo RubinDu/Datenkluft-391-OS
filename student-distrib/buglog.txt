@@ -66,5 +66,20 @@ CP3 Bugs
 
 Author: Stephen Cao
 Description: The system_open function return wrong fd.
-Location: system_call.can
+Location: system_call.c
 Fix: the open function do not return the fd value that cause 'ls.exe' test show open directory fail. After changing the for loop for fd counter and return the correct fd, it fixed.
+
+Author: Shanbo Zhang
+Description: The halt system call brings the eip to 0, and causes page fault.
+Location: system_call.c
+Fix: We need to restore the ebp as we switch back to the shell. I recorded the ebp in the pcb. Logically, it is the pcb to be switched back. I use the parent pcb's ebp, however, which causes the function return to the bad address. It runs currectly as I change the ebp.
+
+Author: Shanbo Zhang
+Description: Page fault at USER_ENTRY (32, 128MB), even after I mark the page present.
+Location: system_call.c
+Fix: To allow the user program to write to the page, we need to mark the bit #2 to 1, which represents if user can write the page.
+
+Author: Shanbo Zhang
+Description: page fault at halt after we reset the page base address
+LOCATION: system_call.c
+Fix: At this time, we also need to flush the TLB.
