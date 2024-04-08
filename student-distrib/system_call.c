@@ -320,8 +320,7 @@ int32_t close(int32_t fd){
         return -1; /* illegal arguments */
     }
     curr_pcb->fd[fd].flags = 0;             /* marks closed */
-    curr_pcb->fd[fd].file_ops->close(fd);   /* call the interface */
-    return 0;
+    return curr_pcb->fd[fd].file_ops->close(fd);    /* call the interface */
 }
 
 /**
