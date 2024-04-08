@@ -61,3 +61,10 @@ Author: Stephen Cao
 Description: The file size is 0 for all files.
 Location: filesys.c
 Fix: I only access the a fixed location in the dentry struct, which means that the retrieved file size is the first file, which is ".". To get the file size of each file, I added the offset as a parameter of the function.
+
+CP3 Bugs
+
+Author: Stephen Cao
+Description: The system_open function return wrong fd.
+Location: system_call.can
+Fix: the open function do not return the fd value that cause 'ls.exe' test show open directory fail. After changing the for loop for fd counter and return the correct fd, it fixed.
