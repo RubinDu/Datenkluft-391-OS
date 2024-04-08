@@ -73,6 +73,16 @@ int32_t halt(uint8_t status){
     return -1;                  /* never reaches here */
 }
 
+/**
+ * int32_t execute(const uint8_t* command):
+ * DESCRIPTION: executes a program specified by \p command
+ *              followed by arguments (not required) after
+ *              the program name in \p command
+ * INPUTS: command -- a null-terminated string stored the
+ *                    program name and the arguments
+ * OUTPUTS: none
+ * RETURN: 0 if created successfully, 1 otherwise
+ */
 int32_t execute(const uint8_t* command){
     int i, pid;
     uint8_t filename[READBUF_SIZE] = {0};   /* file name */
@@ -217,34 +227,68 @@ int32_t execute(const uint8_t* command){
     return 0;
 }
 
-int32_t read(int32_t fd, void* buf, int32_t nbytes){
-    pcb_t* curr_pcb = current_pcb();
+/**
+ * int32_t read(int32_t fd, void* buf, int32_t nbytes):
+ * DESCRIPTION: reads the content of the first \p nbytes bytes
+ *              file in the \p fd of the process, and stores the
+ *              read content into \p buf.
+ * INPUTS: fd - the file descriptor of the read file
+ *         nbytes - the capacity of the buffer
+ * OUTPUTS: buf - the buffer storing the content
+ * RETURNS: the number of bytes read, or -1 if failed
+ */
+int32_t read(int32_t fd, void* buf, int32_t nbytes) {
+    pcb_t* curr_pcb = current_pcb();    /* current pcb for fd array */
     uint32_t result;
-    if(fd < 0 || fd >= MAX_FILES || curr_pcb->fd[fd].flags==0) return -1;
-    result = curr_pcb->fd[fd].file_ops->read(fd, buf, nbytes);
-    curr_pcb->fd[fd].file_position += result;
+    if(fd < 0 || fd >= MAX_FILES || curr_pcb->fd[fd].flags==0) {
+        return -1;                      /* the argument is illegal*/
+    }
+    result = curr_pcb->fd[fd].file_ops->read(fd, buf, nbytes);  /* call the interfance */
+    curr_pcb->fd[fd].file_position += result; 
     return result;
 }
 
+/**
+ * int32_t write(int32_t fd, const void* buf, int32_t nbytes):
+ * DESCRIPTION: wrties the first \p nbytes buffer \p buf into the file
+ *              represented by \p fd.
+ * INPUTS: fd - the file descriptor of the file to write
+ *         buf - the buffer to be wrote into the file
+ *         nbytes - the number of bytes to be wrote
+ * OUTPUTS: none
+ * RETURNS: the number of byte wrote, or -1 if failed to write
+ */
 int32_t write(int32_t fd, const void* buf, int32_t nbytes){
     pcb_t* curr_pcb = current_pcb();
-    if(fd < 0 || fd >= MAX_FILES || curr_pcb->fd[fd].flags==0) return -1;
+    if(fd < 0 || fd >= MAX_FILES || curr_pcb->fd[fd].flags==0){
+        return -1; /* illegal argument */
+    }
     return curr_pcb->fd[fd].file_ops->write(fd, buf, nbytes);
 }
 
+/**
+ * int32_t open(const uint8_t* filename):
+ * DESCRIPTION: opens a files at the given \p filename
+ *              open should be called BEFORE any other manipulations
+ * INPUTS: filename - the file name
+ * OUTPUTS: none
+ * RETURN: the file descriptor of the file, or -1 otherwise
+ */
 int32_t open(const uint8_t* filename){
     int i;
     dentry_t dentry;
-    pcb_t* curr_pcb = current_pcb();
+    pcb_t* curr_pcb = current_pcb();                    /* the process to open the file */
 
-    if(filename == NULL || read_dentry_by_name(filename, &dentry) == -1) return -1;
+    if(filename == NULL || read_dentry_by_name(filename, &dentry) == -1) {
+        return -1;                                      /* the file name is invalid */
+    }
 
-    for(i=2; i<MAX_FILES; i++){
+    for(i=2; i<MAX_FILES; i++){                         /* seeks for a idle fd */
         if( curr_pcb->fd[i].flags == 0){
-            curr_pcb->fd[i].flags = 1;
+            curr_pcb->fd[i].flags = 1;                  /* marks it open */
             curr_pcb->fd[i].inode = dentry.inode_num;
-            curr_pcb->fd[i].file_position = 0;
-            switch(dentry.file_type){
+            curr_pcb->fd[i].file_position = 0;          /* marks the position to the beginning */
+            switch(dentry.file_type) {                  /* assigns the corresponding interface */
                 case 0:
                     curr_pcb->fd[i].file_ops = (file_operations_t*)&rtc_op;
                     break;
@@ -257,53 +301,144 @@ int32_t open(const uint8_t* filename){
                 default:
                     break;
             }
-            return i;
+            return i;                                   /* returns the fd */
         }
     }
-    return -1;
-    
+    return -1;                                          /* reaches the capacity */
 }
 
+/**
+ * int32_t close(int32_t fd):
+ * DESCRIPTION: closes the file represented by \p fd
+ * INPUTS: fd - the file needing to be closed
+ * OUTPUTS: none
+ * RETURN: 0 if closed, or -1 otherwise
+ */
 int32_t close(int32_t fd){
     pcb_t* curr_pcb = current_pcb();
-    if(fd < 2 || fd >= MAX_FILES || curr_pcb->fd[fd].flags==0) return -1;
-    curr_pcb->fd[fd].flags = 0;
-    curr_pcb->fd[fd].file_ops->close(fd);
+    if(fd < 2 || fd >= MAX_FILES || curr_pcb->fd[fd].flags==0) {
+        return -1; /* illegal arguments */
+    }
+    curr_pcb->fd[fd].flags = 0;             /* marks closed */
+    curr_pcb->fd[fd].file_ops->close(fd);   /* call the interface */
     return 0;
 }
 
+/**
+ * int32_t getargs(uint8_t* buf, int32_t nbytes):
+ * DESCRIPTION: gets the arguments of the process when it is created
+ * INPUTS: nbytes - the size of the buffer
+ * OUTPUTS: buf - the buffer to store the argument 
+ * RETURN: 0 if succeed, -1 otherwise
+ */
 int32_t getargs(uint8_t* buf, int32_t nbytes){
+    // if (buf == NULL || nbytes == 0) {
+    //     return -1;
+    // }
+    
+    // pcb_t* pcb = current_pcb();
+    // if (!pcb->args[0]) {
+    //     return -1;
+    // }
+
+    // uint8_t* src, *dest;
+    // for (src = (uint8_t*)pcb->args, dest = buf; nbytes && *src; ++src, ++dest, --nbytes) {
+    //     *dest = *src;
+    // }
+    // if (nbytes == 0) {
+    //     return -1;
+    // } else {
+    //     *dest = 0;
+    //     return 0;
+    // }
     return -1;
 }
 
+/**
+ * int32_t vidmap(uint8_t** screen_start)
+ * DESCRIPTION: maps the text-mode video memory into user space
+ * INPUTS: screen_start - the memory entry of the screen
+ * OUTPUTS: none
+ * RETURN: video memory address
+ */
 int32_t vidmap(uint8_t** screen_start){
     return -1;
 }
 
+/**
+ * int32_t set_handler(int32_t signum, void* handler_address):
+ * DESCRIPTION: for cp4
+ * INPUTS: signum - the index of the signal
+ *         handler_address - the function pointer of the handler
+ * OUTPUTS: none
+ * RETURN: (pending for cp4)
+ */
 int32_t set_handler(int32_t signum, void* handler_address){
     return -1;
 }
 
+/**
+ * int32_t sigreturn(void):
+ * DESCRIPTION: for cp4
+ * INPUTS: none
+ * OUTPUTS: none
+ * RETURN: (pending for cp4)
+ */
 int32_t sigreturn(void){
     return -1;
 }
 
-int32_t null_read(int32_t fd, void* buf, int32_t nbytes){
+/**
+ * int32_t null_read(int32_t fd, void* buf, int32_t nbytes):
+ * DESCRIPTION: read handler for closed meaningless fd
+ * INPUTS: IGNORED
+ * OUTPUTS: IGNORED
+ * RETURN: always -1
+ */
+int32_t null_read(int32_t fd, void* buf, int32_t nbytes) {
     return -1;
 }
 
+/**
+ * int32_t null_write(int32_t fd, const void* buf, int32_t nbytes):
+ * DESCRIPTION: write handler for closed meaningless fd
+ * INPUTS: IGNORED
+ * OUTPUTS: IGNORED
+ * RETURN: always -1
+ */
 int32_t null_write(int32_t fd, const void* buf, int32_t nbytes){
     return -1;
 }
 
+/**
+ * int32_t null_open(const uint8_t* filename):
+ * DESCRIPTION: open handler for closed meaningless fd
+ * INPUTS: IGNORED
+ * OUTPUTS: IGNORED
+ * RETURN: always -1
+ */
 int32_t null_open(const uint8_t* filename){
     return -1;
 }
 
+/**
+ * int32_t null_close(int32_t fd):
+ * DESCRIPTION: close handler for closed meaningless fd
+ * INPUTS: IGNORED
+ * OUTPUTS: IGNORED
+ * RETURN: always -1
+ */
 int32_t null_close(int32_t fd){
     return -1;
 }
 
+/**
+ * pcb_t* current_pcb():
+ * DESCRIPTION: gets the pcb of the running process
+ * INPUTS: none
+ * OUTPUTS: none
+ * RETURN: the pcb of the running process
+*/
 pcb_t* current_pcb(){
     uint32_t esp;
     asm volatile ("                 \n\
@@ -313,4 +448,3 @@ pcb_t* current_pcb(){
     );
     return (pcb_t*)(esp & (KSTACK_START - KSTACK_SIZE));
 }
-
