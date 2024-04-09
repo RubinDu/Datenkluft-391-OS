@@ -34,17 +34,19 @@ rtc_intr:
 # System call linkage
 # Saves all, checks if the system call is valid, calls the corresponding handler, restores all, return with return value in eax
 system_call:
-    pushl %esi
-    pushl %edi
-    pushl %esp
-    pushl %ebp
-    pushl %ebx
-    pushl %ecx
-    pushl %edx
     pushw %fs
+    pushw $0
     pushw %es
+    pushw $0
     pushw %ds
     pushw $0
+    pushl %eax
+    pushl %ebp
+    pushl %edi
+    pushl %esi
+    pushl %edx
+    pushl %ecx
+    pushl %ebx
 
     subl $1, %eax               # eax := interrupt number
     cmpl $9, %eax
@@ -65,17 +67,17 @@ bad_sc:
     movl $-1, %eax
 
 sc_done:
-    addl $2, %esp
-    popw %ds
-    popw %es
-    popw %fs
-
-    popl %edx
-    popl %ecx
     popl %ebx
-    popl %ebp
-    popl %esp
-    popl %edi
+    popl %ecx
+    popl %edx
     popl %esi
+    popl %edi
+    popl %ebp
+    addl $6, %esp
+    popw %ds
+    addl $2, %esp
+    popw %es
+    addl $2, %esp
+    popw %fs
 
     iret
