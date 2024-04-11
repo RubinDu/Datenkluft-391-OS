@@ -14,8 +14,7 @@ uint32_t file_size = 0;
 *   SIDE EFFECTS: Initialize the file system
 */
 void file_system_init(uint32_t boot_addr){
-    void* ptr = (void*)boot_addr;
-    boot_block = (boot_block_t*)ptr;
+    boot_block = (boot_block_t*)boot_addr;
     inode_block = (inode_t*)(boot_block + 1);
     dentry_block = boot_block->dir_entries_arr;
     data_block = (data_block_t*)(boot_block + boot_block->num_inodes + 1);

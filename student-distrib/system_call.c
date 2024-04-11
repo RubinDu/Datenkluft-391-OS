@@ -331,26 +331,28 @@ int32_t close(int32_t fd){
  * RETURN: 0 if succeed, -1 otherwise
  */
 int32_t getargs(uint8_t* buf, int32_t nbytes){
-    // if (buf == NULL || nbytes == 0) {
-    //     return -1;
-    // }
+    if (buf == NULL || nbytes == 0) {   /* check if the buffer is valid */
+        return -1;
+    }
     
-    // pcb_t* pcb = current_pcb();
-    // if (!pcb->args[0]) {
-    //     return -1;
-    // }
+    pcb_t* pcb = current_pcb();
+    if (!pcb->args[0]) {                /* check if the process has an argument*/
+        *buf = 0;
+        return -1;
+    }
 
-    // uint8_t* src, *dest;
-    // for (src = (uint8_t*)pcb->args, dest = buf; nbytes && *src; ++src, ++dest, --nbytes) {
-    //     *dest = *src;
-    // }
-    // if (nbytes == 0) {
-    //     return -1;
-    // } else {
-    //     *dest = 0;
-    //     return 0;
-    // }
-    return -1;
+    uint8_t* src, *dest;
+    for (src = (uint8_t*)pcb->args, dest = buf;
+         nbytes && *src;
+         ++src, ++dest, --nbytes) {     /* copy until buffer reached   */
+        *dest = *src;                   /* or the string is terminated */
+    }
+    if (nbytes == 0) {                  /* cannot put the termination */
+        return -1;
+    } else {
+        *dest = 0;
+        return 0;
+    }
 }
 
 /**
