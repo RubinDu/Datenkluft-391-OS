@@ -2,6 +2,7 @@
 #include "lib.h"
 #include "i8259.h"
 #include "terminal.h"
+#include "system_call.h"
 
 static char sc=0;                               //Scan char buffer
 static char lshift = 0;        
@@ -53,7 +54,6 @@ void keyboard_init(){
  *   SIDE EFFECTS: Reads from keyboard port 0x60 and prints the char (if valid) to screen
  */
 void keyboard_handler(){
-    cli();
     sc = inb(KEYBOARD_PORT);        //Scans from keyboard port 0x60
     switch (sc&0xFF)                //Only lower 8 bits are valid
     {
@@ -106,6 +106,12 @@ void keyboard_handler(){
                 case 0x26:      //Ctrl + L
                     clear();
                     break;
+                case 0x2E:      //Ctrl + C
+                    reset_buf();
+                    send_eoi(KEYBOARD_IRQ);      //Send end of interrupt
+                    sti();
+                    halt(128);
+                    break;
                 default:
                     break;
                 }
@@ -128,7 +134,6 @@ void keyboard_handler(){
         break;
     }
     send_eoi(KEYBOARD_IRQ);      //Send end of interrupt
-    sti();
 }
 
 /* 
