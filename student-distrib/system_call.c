@@ -4,6 +4,8 @@
 /* nonzero if exception occurs. */
 extern uint8_t exception_occurred;
 
+pte_t user_video_memory_pt[PAGE_TABLE_COUNT] __attribute__((aligned(PAGING_ALIGNMENT)));
+
 /**
  * int32_t halt(uint8_t status):
  * DESCRIPTION: a system call handler that when some process
@@ -362,8 +364,33 @@ int32_t getargs(uint8_t* buf, int32_t nbytes){
  * OUTPUTS: none
  * RETURN: video memory address
  */
-int32_t vidmap(uint8_t** screen_start){
-    return -1;
+int32_t vidmap(uint8_t** screen_start) {
+    if (screen_start == NULL                /* invalid address */
+        || ((uint32_t)(screen_start) >> 22) != USER_ENTRY) {
+        return -1;
+    }
+
+    int i;
+
+    memset(user_video_memory_pt, 0, PAGE_TABLE_COUNT * sizeof(pte_t));
+    for (i = 0; i < PAGE_TABLE_COUNT; ++i) {
+        user_video_memory_pt[i].page_base_address = i;
+    }
+
+    user_video_memory_pt[VIDEO_MEMORY_PTE].present = 1;
+    user_video_memory_pt[VIDEO_MEMORY_PTE].user_supervisor = 1;
+    user_video_memory_pt[VIDEO_MEMORY_PTE].read_write = 1;
+
+    /* assigns the a page table entry in another page directory onto */
+    page_directory[VIDEO_MEMORY_PTE].KB.present = 1;
+    page_directory[VIDEO_MEMORY_PTE].KB.user_supervisor = 1;
+    page_directory[VIDEO_MEMORY_PTE].KB.read_write = 1;
+    page_directory[VIDEO_MEMORY_PTE].KB.page_size = 0;          /* we need one subpage */
+    page_directory[VIDEO_MEMORY_PTE].KB.page_table_base_address = ((uint32_t)user_video_memory_pt >> 12);
+
+    *screen_start = (uint8_t*)((VIDEO_MEMORY_PTE << 22) | (VIDEO_MEMORY_PTE << 12));
+
+    return 0;
 }
 
 /**

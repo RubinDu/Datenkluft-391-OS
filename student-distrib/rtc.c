@@ -18,7 +18,7 @@ void rtc_init(){
     enable_irq(RTC_IRQ);
     sti();
     rtc_set_rate(MIN_RATE); /* set the maximum acceptable rate, corresponding to 1024 Hz */
-    rtc_info.enabled = 0;   /* rtc is logically disabled at first */
+    // rtc_info.enabled = 0;   /* rtc is logically disabled at first */
 }
 
 /*
