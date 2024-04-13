@@ -25,7 +25,7 @@ struct rtc_info_t {
     volatile int32_t enabled; /* 1 if rtc is enabled, 0 otherwise */
     volatile int32_t current; /* the current progress to a milestone */
     volatile int32_t frequency; /* how many interrupts a logical rtc interrupt should occur */
-} rtc_info;
+};
 
 /* initializes the rtc driver */
 void rtc_init();

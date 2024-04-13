@@ -1,6 +1,12 @@
 #include "rtc.h"
 #include "system_call.h"
 
+struct rtc_info_t rtc_info = {
+    .enabled = 0,
+    .current = 0,
+    .frequency = MAX_FREQUENCY / MIN_FREQUENCY,
+};
+
 /*
 * rtc_init
 *   DESCRIPTION: Initialize the RTC
@@ -90,6 +96,7 @@ int32_t rtc_open(const uint8_t* filename){
  */
 int32_t rtc_close(int32_t fd){
     // rtc_info.enabled = 0; /* we disable the rtc */
+    rtc_info.frequency = MAX_FREQUENCY / MIN_FREQUENCY;
     return 0;
 }
 
