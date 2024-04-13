@@ -83,3 +83,15 @@ Author: Shanbo Zhang
 Description: page fault at halt after we reset the page base address
 LOCATION: system_call.c
 Fix: At this time, we also need to flush the TLB.
+
+CP4 Bugs
+
+Author: Rubin Du
+Description: Keyboard stopped working after CTRL+C
+Location: keyboard.c
+Fix: Have send EOI and unmask interrupts before halting the program
+
+Author: Rubin Du
+Description: Asychronous terminal writes results in abnormal backspace behavior
+Location: terminal.c
+Fix: Have to reset the keyboard buffer whenever a terminal write is done so that backspace won't delete written characters

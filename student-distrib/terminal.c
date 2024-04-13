@@ -42,6 +42,7 @@ int32_t terminal_write(int32_t file, const void* buf, int32_t nbytes){
     for (i = 0; i < nbytes; i++)        // Traverse through the buffer
         if (((char*)buf)[i])            // Print to terminal if not null character
             putc(((char*)buf)[i]);
+    reset_buf();                        // In case for asychronous write
     sti();
     return nbytes;
 }
