@@ -95,3 +95,8 @@ Author: Rubin Du
 Description: Asychronous terminal writes results in abnormal backspace behavior
 Location: terminal.c
 Fix: Have to reset the keyboard buffer whenever a terminal write is done so that backspace won't delete written characters
+
+Author: Shanbo Zhang
+Description: Page fault after creating user-level page for video memory
+Location: system_call.c
+Fix: When we need to create a pte for video memory, we need to make a pde to points to pdes, and assign one of them to 0xB8000, the memory address of video meory. At this time, both pte and pde need to be at user level and be enabled users to write. I forgot to assign pde at first, and it runs after I change these levels.

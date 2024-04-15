@@ -372,25 +372,44 @@ int32_t vidmap(uint8_t** screen_start) {
 
     int i;
 
+    /* **************************************************
+     * *       Initializes the page table at PDE        *
+     * **************************************************/
     memset(user_video_memory_pt, 0, PAGE_TABLE_COUNT * sizeof(pte_t));
     for (i = 0; i < PAGE_TABLE_COUNT; ++i) {
         user_video_memory_pt[i].page_base_address = i;
     }
 
+    /* **************************************************
+     * *      Edits the property of user-level VM       *
+     * ************************************************** 
+     * * - present bit
+     * * - enables user-level
+     * * - enables user to write ^_^
+     * ************************************************** */
     user_video_memory_pt[VIDEO_MEMORY_PTE].present = 1;
     user_video_memory_pt[VIDEO_MEMORY_PTE].user_supervisor = 1;
     user_video_memory_pt[VIDEO_MEMORY_PTE].read_write = 1;
 
-    /* assigns the a page table entry in another page directory onto */
+
+    /* **************************************************
+     * *       ALSO ASSIGN PDE for user-level VM        *
+     * ************************************************** 
+     * * - present bit
+     * * - enables user-level
+     * * - enables user to write ^_^
+     * * - page address --> subtable
+     * ************************************************** */
     page_directory[VIDEO_MEMORY_PTE].KB.present = 1;
     page_directory[VIDEO_MEMORY_PTE].KB.user_supervisor = 1;
     page_directory[VIDEO_MEMORY_PTE].KB.read_write = 1;
     page_directory[VIDEO_MEMORY_PTE].KB.page_size = 0;          /* we need one subpage */
     page_directory[VIDEO_MEMORY_PTE].KB.page_table_base_address = ((uint32_t)user_video_memory_pt >> 12);
 
+    /* assigns page address */
     *screen_start = (uint8_t*)((VIDEO_MEMORY_PTE << 22) | (VIDEO_MEMORY_PTE << 12));
 
-    return 0;
+    return 0; /* succeed */
 }
 
 /**
