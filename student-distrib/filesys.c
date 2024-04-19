@@ -32,7 +32,7 @@ void file_system_init(uint32_t boot_addr){
 */
 int32_t read_dentry_by_name(const uint8_t* fname, dentry_t* dentry){
     int i;
-    if(fname == NULL || strlen((int8_t*)fname) > MAX_FILE_NAME+1){
+    if(fname == NULL || strlen((int8_t*)fname) > MAX_FILE_NAME){
         return -1;
     }
 
