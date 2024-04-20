@@ -2,12 +2,14 @@
  * vim:ts=4 noexpandtab */
 
 #include "lib.h"
+#include "system_call.h"
 
 #define VIDEO       0xB8000
 #define NUM_COLS    80
 #define NUM_ROWS    25
 #define ATTRIB      0x7
 #define TAB         0xF
+#define VIDEO_SIZE 0x1000
 
 static int screen_x;
 static int screen_y;
@@ -20,12 +22,18 @@ static char* video_mem = (char *)VIDEO;
 void clear(void) {
     int32_t i;
     for (i = 0; i < NUM_ROWS * NUM_COLS; i++) {
-        *(uint8_t *)(video_mem + (i << 1)) = ' ';
-        *(uint8_t *)(video_mem + (i << 1) + 1) = ATTRIB;
+        *(uint8_t *)(video_mem + VIDEO_SIZE + (i << 1)) = ' ';
+        *(uint8_t *)(video_mem + VIDEO_SIZE + (i << 1) + 1) = ATTRIB;
     }
-    screen_x = 0;
-    screen_y = 0;
-    update_cursor(screen_x, screen_y);
+    if (current_pcb()->terminal_idx==active_terminal){
+        screen_x = 0;
+        screen_y = 0;
+    }
+    else{
+        terminals[current_pcb()->terminal_idx].cx = 0;
+        terminals[current_pcb()->terminal_idx].cy = 0;
+    }
+    update_cursor();
 }
 
 /* Standard printf().
@@ -213,7 +221,24 @@ void putc(uint8_t c) {
                 scroll();
         }
     }
-    update_cursor(screen_x, screen_y);  // Update the cursor position
+    update_cursor();  // Update the cursor position
+}
+
+void echo (uint8_t c){
+    if (current_pcb()->terminal_idx==active_terminal)
+        putc(c);
+    else{
+        int cache_x = screen_x, cache_y = screen_y;
+        screen_x = terminals[active_terminal].cx;
+        screen_y = terminals[active_terminal].cy;
+        video_mem+=VIDEO_SIZE;
+        putc(c);
+        video_mem-=VIDEO_SIZE;
+        terminals[active_terminal].cx = screen_x;
+        terminals[active_terminal].cy = screen_y;
+        screen_x = cache_x;
+        screen_y = cache_y;
+    }
 }
 
 /* int8_t* itoa(uint32_t value, int8_t* buf, int32_t radix);
@@ -532,12 +557,28 @@ void scroll() {
  *         int y = y of the cursor
  * Return Value: void
  * Function: Updates the cursor position */
-void update_cursor(int x, int y){
+void update_cursor(){
     //reference: https://wiki.osdev.org/Text_Mode_Cursor
-	uint16_t pos = y * NUM_COLS + x;    //Position of the cursor
+	uint16_t pos = terminals[active_terminal].cy * NUM_COLS + terminals[active_terminal].cx;    //Position of the cursor
  
 	outb(0x0F, 0x3D4);                  //Set Cursor Low Byte
 	outb((uint8_t) (pos & 0xFF), 0x3D5);
 	outb(0x0E, 0x3D4);                  //Set Cursor High Byte
 	outb((uint8_t) ((pos >> 8) & 0xFF), 0x3D5);
+}
+
+void switch_terminal(int terminal_idx, char* readbuf, int* num_echoed){
+    if (terminal_idx==active_terminal)
+        return;
+    memcpy(terminals[active_terminal].terminal_buf, readbuf, READBUF_SIZE);
+    terminals[active_terminal].num_echoed = *num_echoed;
+
+    memcpy(VIDEO+(active_terminal+2)*VIDEO_SIZE, VIDEO+VIDEO_SIZE, VIDEO_SIZE);
+    memcpy(VIDEO+VIDEO_SIZE, VIDEO+(terminal_idx+2)*VIDEO_SIZE, VIDEO_SIZE);
+
+    active_terminal = terminal_idx;
+    memcpy(readbuf, terminals[active_terminal].terminal_buf, READBUF_SIZE);
+    *num_echoed = terminals[active_terminal].num_echoed;
+
+    update_cursor();
 }

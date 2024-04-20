@@ -3,6 +3,7 @@
 #include "i8259.h"
 #include "terminal.h"
 #include "system_call.h"
+#include "x86_desc.h"
 
 static char sc=0;                               //Scan char buffer
 static char lshift = 0;        
@@ -11,6 +12,7 @@ static char cap = 0;
 static char cap_released = 1; 
 static char ctrl = 0;         
 static char az = 0;
+static char alt = 0;
 static int num_echoed=0;
 static char read_buf[READBUF_SIZE];                      //Buffer for read
 static char keys[KEYS_SIZE]={                          //ps/2 keyboard scan char map for numbers, alphabet, and some symbols
@@ -99,6 +101,12 @@ void keyboard_handler(){
         end_of_line(read_buf);    // Return contents in the read buffer to terminal and resume terminal_read
         reset_buf();
         break;
+    case 0x38:      //Alt pressed
+        alt = 1;
+        break;
+    case 0xB8:      //Alt released
+        alt = 0;
+        break;
     default:
         if (sc < KEYS_SIZE && keys[(uint32_t)sc]){
             if (ctrl){
@@ -111,6 +119,22 @@ void keyboard_handler(){
                     send_eoi(KEYBOARD_IRQ);      //Send end of interrupt
                     sti();
                     halt(128);
+                    break;
+                default:
+                    break;
+                }
+            }
+            if (alt)
+            {
+                switch (sc){
+                case 0x3B:      //Alt + F1
+                    switch_terminal(0, read_buf, &num_echoed);
+                    break;
+                case 0x3C:      //Alt + F2
+                    switch_terminal(1, read_buf, &num_echoed);
+                    break;
+                case 0x3D:      //Alt + F3
+                    switch_terminal(2, read_buf, &num_echoed);
                     break;
                 default:
                     break;

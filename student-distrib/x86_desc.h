@@ -25,6 +25,9 @@
 #define PAGE_DIRECTORY_COUNT 1024   /* the amount of PDE */
 #define PAGE_TABLE_COUNT 1024       /* the amount of PTE */
 
+#define READBUF_SIZE 128
+#define NUM_TERMINAL 3
+
 #ifndef ASM
 
 /* This structure is used to load descriptor base registers
@@ -221,6 +224,17 @@ typedef union pte_t {
         uint32_t page_base_address : 20;
     } __attribute__((packed));
 } pte_t;
+
+typedef struct terminal_t{
+    uint8_t present;
+    uint8_t terminal_buf[READBUF_SIZE];
+    uint8_t num_echoed;
+    uint8_t cx;
+    uint8_t cy;
+} terminal_t;
+
+static terminal_t terminals[NUM_TERMINAL];            //Array of terminals
+static uint8_t active_terminal=0;                        //Index of active terminal
 
 /* Sets runtime parameters for an IDT entry */
 #define SET_IDT_ENTRY(str, handler)                              \

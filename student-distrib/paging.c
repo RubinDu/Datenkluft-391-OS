@@ -41,6 +41,13 @@ void paging_init() {
     }
     
     page_table[VIDEO_MEMORY_PTE].present = 1; /* the page storing the video memory should be presented */
+    
+    page_table[VIDEO_MEMORY_PTE+1].present = 1; /* Backup video memory page */
+    page_table[VIDEO_MEMORY_PTE+2].present = 1; /* Terminal 0 video memory page */
+    page_table[VIDEO_MEMORY_PTE+3].present = 1; /* Terminal 1 video memory page */
+    page_table[VIDEO_MEMORY_PTE+4].present = 1; /* Terminal 2 video memory page */
+
+    page_table[VIDEO_MEMORY_PTE+1].page_base_address--; /* Set to map the video memory */
 
     /* **************************************************
      * *          Set Page Directory to CR3             *

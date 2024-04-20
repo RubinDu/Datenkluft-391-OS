@@ -2,9 +2,10 @@
 #include "keyboard.h"
 #include "lib.h"
 #include "system_call.h"
+#include "x86_desc.h"
 
 volatile static char idle = 1;   // 1 if terminal is idle, 0 if terminal is reading
-static void* readbuf;            // pointer to the read buffer
+static char readbuf[READBUF_SIZE];            // pointer to the read buffer
 static int32_t readcount;        // number of bytes to read
 
 
@@ -18,11 +19,11 @@ static int32_t readcount;        // number of bytes to read
 *   SIDE EFFECTS: While user haven't pressed enter, spins and waits for input
 */
 int32_t terminal_read(int32_t file, void* buf, int32_t nbytes){
-    readbuf = buf;      // Store necessary data for end_of_line
     readcount = nbytes;
     reset_buf();        // Reset the keyboard buffer
     idle = 0;           // Set status to reading
-    while (!idle);      // Wait reading to finish
+    while (!idle||current_pcb()->terminal_idx!=active_terminal);      // Wait reading to finish
+    memcpy(buf, readbuf, readcount);    // Copy the read buffer to the output buffer
     return readcount;   // Return actual number of bytes read
 }
 
@@ -83,6 +84,7 @@ void end_of_line(char* buf){
     if (idle)                           // If terminal is idle, return
         return;
     int i;
+    memset(readbuf, '\n', READBUF_SIZE);  // Clear the read buffer
     for (i = 0; i < readcount; i++){    // Traverse through the keyboard buffer, move characters to read buffer until size of read buffer reached or newline
         if (buf[i] == '\n'){
             i++;
