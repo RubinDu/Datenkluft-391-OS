@@ -5,6 +5,7 @@
 #define SYSTEMCALL 0x80
 #define KEYBOARD 0x21
 #define RTC 0x28
+#define PIT 0x20
 
 /* 
  * EXPX/systemcall_blank

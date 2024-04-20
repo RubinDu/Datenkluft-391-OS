@@ -202,6 +202,11 @@ void idt_init(){
             idt[i].dpl = 0;
             SET_IDT_ENTRY(idt[i], rtc_intr);
         }
+        if (i == PIT) {
+            idt[i].present = 1;
+            idt[i].dpl = 0;
+            SET_IDT_ENTRY(idt[i], pit_intr);
+        }
     }
     lidt(idt_desc_ptr);                     //load the IDT
 }

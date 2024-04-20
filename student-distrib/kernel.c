@@ -10,6 +10,7 @@
 #include "tests.h"
 #include "idt.h"
 #include "rtc.h"
+#include "pit.h"
 #include "keyboard.h"
 #include "paging.h"
 #include "filesys.h"
@@ -159,6 +160,9 @@ void entry(unsigned long magic, unsigned long addr) {
     rtc_init();
 
     paging_init();
+
+    pit_init(100);
+
     /* Enable interrupts */
     /* Do not enable the following until after you have set up your
      * IDT correctly otherwise QEMU will triple fault and simple close

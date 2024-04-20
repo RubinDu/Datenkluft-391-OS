@@ -41,6 +41,7 @@ extern void rtc_intr();
  */
 extern void system_call();
 
+extern void pit_intr();
 
 #endif
 #endif

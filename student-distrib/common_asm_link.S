@@ -2,7 +2,7 @@
 #include "common_asm_link.h"
 
 .text
-.globl keyboard_intr, rtc_intr, system_call
+.globl keyboard_intr, rtc_intr, system_call, pit_intr
 
 sc_table:
     .long halt, execute, read, write, open, close, getargs, vidmap, set_handler, sigreturn
@@ -26,6 +26,16 @@ rtc_intr:
     pushfl
     pushal
     call rtc_handler
+    popal
+    popfl
+    sti
+    iret
+
+pit_intr:
+    cli
+    pushfl
+    pushal
+    call pit_handler
     popal
     popfl
     sti
