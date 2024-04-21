@@ -225,12 +225,13 @@ typedef union pte_t {
     } __attribute__((packed));
 } pte_t;
 
-typedef struct terminal_t{
+typedef struct terminal {
     uint8_t present;
     uint8_t terminal_buf[READBUF_SIZE];
     uint8_t num_echoed;
     uint8_t cx;
     uint8_t cy;
+    uint32_t pid;
 } terminal_t;
 
 static terminal_t terminals[NUM_TERMINAL];            //Array of terminals

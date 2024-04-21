@@ -12,7 +12,7 @@
 #define MAGIC_SIZE 4
 #define MAGIC_NUM 0x464C457F
 #define USER_ENTRY 32
-#define MAX_TASKS 3
+#define MAX_TASKS 6
 #define PROGRAM_IMAGE_ADDR 0x8048000        /* virtual address of the program image */
 #define PROGRAM_IMAGE_LIMIT 0x3B8000        /* limit of size of program image */
 #define USER_STACK 0x8400000
@@ -28,6 +28,8 @@ typedef struct pcb {
     struct pcb* parent;
     uint32_t esp;
     uint32_t ebp;
+    uint32_t esp0;
+    uint16_t ss0;
     char args[READBUF_SIZE];
     uint8_t terminal_idx;
 }pcb_t;

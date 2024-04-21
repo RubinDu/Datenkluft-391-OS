@@ -26,10 +26,8 @@ int32_t halt(uint8_t status){
         pcb->fd[i].flags = 0;
     }
 
-    if (!pcb->parent) { /* if exit the shell, recreate it ^-^ */
-        pcb->present = 0;
-
-        execute((uint8_t*)"shell");
+    if (pcb->pid < 3) { /* if exit the shell, recreate it ^-^ */
+        return;
     }
 
     /* **************************************************
@@ -145,7 +143,7 @@ int32_t execute(const uint8_t* command){
         return -1;
 
     /* gets the index of the new process */
-    for (pid = 0; pid < MAX_TASKS; pid++)
+    for (pid = 3; pid < MAX_TASKS; pid++)
         if (!(GET_PCB(pid)->present))
             break;
 
@@ -180,7 +178,7 @@ int32_t execute(const uint8_t* command){
      * **************************************************/
     /* creates the pcb */
     pcb = GET_PCB(pid);
-    pcb->parent = pid ? current_pcb() : NULL;
+    pcb->parent = (pid > 2) ? current_pcb() : NULL;
     pcb->present = 1;
     pcb->pid = pid;
     
@@ -219,7 +217,6 @@ int32_t execute(const uint8_t* command){
         "pushfl\n"        /* eflags */
         "pushl %2\n"      /* USER_CS */
         "pushl %3\n"      /* eip */
-        "call_iret:\n"
         "iret\n"
         :
         :"r"((uint32_t)USER_DS), "r"((uint32_t)USER_STACK), "r"((uint32_t)USER_CS), "r"(eip)
