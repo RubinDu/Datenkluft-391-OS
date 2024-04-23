@@ -1,6 +1,6 @@
 #include "scheduling.h"
 #include "system_call.h"
-
+#include "pit.h"
 /**
  * void initiate_shells()
  * DESCRIPTION: initiates three shells at the entry
@@ -31,9 +31,12 @@ void initiate_shells() {
     int pid, i;                 /* the corresponding eip*/
     struct pcb* pcb;            /* the pcb of process*/
     for (pid = 2; pid >= 0; --pid) {
+        terminals[pid].present = 1;
+        terminals[pid].pid = -1;
+
         page_directory[USER_ENTRY].MB.page_base_address = 2 + pid;
 
-        asm volatile (
+        asm volatile (                  /* flush the TLB */
             "movl %%cr3, %%eax\n"
             "movl %%eax, %%cr3\n"
             :
@@ -43,7 +46,7 @@ void initiate_shells() {
 
         read_data(shell_dentry.inode_num, 0, (uint8_t*)PROGRAM_IMAGE_ADDR, PROGRAM_IMAGE_LIMIT);
 
-        pcb = GET_PCB(pid);
+        pcb = GET_PCB(pid);             /* set up the PCB */
         pcb->present = 1;
         pcb->parent = NULL;
         pcb->pid = pid;
@@ -61,20 +64,20 @@ void initiate_shells() {
         pcb->ss0 = KERNEL_DS;
 
         asm volatile (
-            "movl %%esp, %%esi\n"
+            "movl %%esp, %%esi\n"   /* store the old esp and ebp*/
             "movl %%ebp, %%edi\n"
-            "movl %5, %%esp\n"  /* write to stack belonging to pcb */
+            "movl %5, %%esp\n"      /* write to esp0 belonging to pcb */
             "movl %5, %%ebp\n"
-            "pushl %1\n"        /* USER_DS */
-            "pushl %2\n"        /* USER_STACK */
-            "pushfl\n"          /* %eflags */
-            "pushl %3\n"        /* USER_CS */
-            "pushl %4\n"        /* EIP */
+            "pushl %1\n"            /* USER_DS */
+            "pushl %2\n"            /* USER_STACK */
+            "pushfl\n"              /* %eflags */
+            "pushl %3\n"            /* USER_CS */
+            "pushl %4\n"            /* EIP */
+            "pushl $iret_exec\n"    /* used by LEAVE and RET*/
             "pushl $iret_exec\n"
-            "pushl $iret_exec\n"/* simulate RET */
-            "movl %%esp, %0\n"  /* changed esp0 */
+            "movl %%esp, %0\n"      /* the program starts at iret*/
             "movl %%edi, %%ebp\n"
-            "movl %%esi, %%esp\n"
+            "movl %%esi, %%esp\n"   /* restore stack back*/
             : "=r"(pcb->ebp)
             : "g"((uint32_t)USER_DS), "r"((uint32_t)USER_STACK), "g"((uint32_t)USER_CS), "r"(eip), "r"(pcb->esp0)
             : "%esi", "%edi", "%esp", "%ebp"
@@ -84,34 +87,44 @@ void initiate_shells() {
     tss.esp0 = pcb->esp0;
     tss.ss0 = pcb->ss0;
 
+    pit_init(100);
+
+    context_switch(0);              /* go to terminal #0 */
+
     asm volatile ("movl %0, %%ebp"::"r"(pcb->ebp));             /* ebp = &iret_exec #1*/
     asm volatile ("leave"); /* ESP = EBP + 4, EBP = M[EBP] */   /* esp = &iret_exec #2; EBP = M[ebp] = iret_exec */                  
     asm volatile ("ret");   /* EIP = M[ESP],  ESP = ESP + 4*/   /* eip = iret_exec    ; esp = esp + 4 = switch for iret */
     asm volatile ("iret_exec: iret");
 }
 
+/**
+ * void context_switch(uint32_t next_pid)
+ * DESCRIPTION: switches the context from current process to another process
+ * INPUT: next_pid - the pid of the next process
+ * OUTPUT: none
+ * RETURN: none
+ */
 void context_switch(uint32_t next_pid) {
     cli();
     
     volatile struct pcb *current = current_pcb();
     volatile struct pcb *next = GET_PCB(next_pid);
-    if (current->pid == next->pid) {
+    if (current->pid == next->pid) {                /* don't need to switch */
         return;
     }
 
-    // page_table[VIDEO_MEMORY_PTE].
     page_directory[USER_ENTRY].MB.page_base_address = 2 + next_pid;
     
-    current->esp0 = tss.esp0;
+    current->esp0 = tss.esp0;       /* store old tss*/
     current->ss0 = tss.ss0;
-    tss.esp0 = next->esp0;
+    tss.esp0 = next->esp0;          /* set new tss */
     tss.ss0 = next->ss0;
 
     asm volatile (
-        "movl %%cr3, %%ecx\n"
+        "movl %%cr3, %%ecx\n"       /* flush the TLB*/
         "movl %%ecx, %%cr3\n"
-        "movl %%ebp, %%eax \n"
-        "movl %%edx, %%ebp \n"
+        "movl %%ebp, %%eax\n"       /* store old EBP, used by LEAVE & RET */
+        "movl %%edx, %%ebp\n"       /* set new EBP, used by LEAVE & RET */
         "sti\n"
         "leave\n"
         "ret\n"

@@ -235,7 +235,7 @@ typedef struct terminal {
 } terminal_t;
 
 static terminal_t terminals[NUM_TERMINAL];            //Array of terminals
-static uint8_t active_terminal=0;                        //Index of active terminal
+static uint32_t active_terminal=0;                        //Index of active terminal
 
 /* Sets runtime parameters for an IDT entry */
 #define SET_IDT_ENTRY(str, handler)                              \

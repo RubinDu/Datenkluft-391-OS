@@ -1,6 +1,7 @@
 #include "pit.h"
 #include "common_asm_link.h"
 #include "i8259.h"
+#include "scheduling.h"
 
 #define PIT_FREQUENCY 1193182
 #define PIT_SQUARE_MODE 0x36
@@ -20,14 +21,30 @@ void pit_init(uint16_t frequency) {
     enable_irq(0);                                          /* enable the interrupt 0x20 in PIC */
 }
 
-int pit_count = 1;
 void pit_handler() {
-    send_eoi(0);
+    send_eoi(0);            /* send eoi before handling it */
+    
+    struct pcb* current = current_pcb();
+    uint32_t current_pid = current->pid, current_terminal;
+    if (current->pid >= NUM_TERMINAL) {             /* program is running on the terminal */
+        current_terminal = current->parent->pid;    /* the terminal is the parent */
+    } else {
+        current_terminal = current_pid;             /* the terminal is idle */
+    }
 
-    // if (++pit_count == 100) {
-    //     printf("PIT!");
-    //     pit_count = 1;
-    // }
+    uint32_t next_terminal = (current_terminal + 1) % 2;
+    uint32_t next_pid;
+    if (terminals[next_terminal].pid >= NUM_TERMINAL) { /* the terminal is running a program*/
+        next_pid = terminals[next_terminal].pid;
+    } else {
+        next_pid = next_terminal;                       /* the terminal is idle */
+    }
 
-    // TODO: Task Switch
+    if (next_terminal == active_terminal) {             /* show the content */
+        page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE;
+    } else {                                            /* don't need to show, but need to update */
+        page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + next_terminal + 2;
+    }
+
+    context_switch(next_pid);                           /* switch to that process */
 }

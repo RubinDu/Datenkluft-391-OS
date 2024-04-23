@@ -114,7 +114,6 @@ void keyboard_handler(){
         if (alt == 1) {
             uint32_t next_terminal = (sc & 0xFF) - 0x3B;
             switch_terminal(next_terminal, read_buf, &num_echoed);
-            context_switch(next_terminal);
         }
         break;
     default:
