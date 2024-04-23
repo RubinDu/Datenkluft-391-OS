@@ -15,6 +15,7 @@
 #include "paging.h"
 #include "filesys.h"
 #include "system_call.h"
+#include "scheduling.h"
 
 #define RUN_TESTS 1
 
@@ -176,7 +177,8 @@ void entry(unsigned long magic, unsigned long addr) {
 // #endif
     /* Execute the first program ("shell") ... */
     clear();
-    execute((uint8_t*)"           shell   ");
+    // execute((uint8_t*)"           shell   ");
+    initiate_shells();
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");
