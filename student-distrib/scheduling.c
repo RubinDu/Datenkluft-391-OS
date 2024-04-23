@@ -85,61 +85,91 @@ void initiate_shells() {
     tss.ss0 = pcb->ss0;
 
     asm volatile ("movl %0, %%ebp"::"r"(pcb->ebp));             /* ebp = &iret_exec #1*/
-    asm volatile ("sti");                          
     asm volatile ("leave"); /* ESP = EBP + 4, EBP = M[EBP] */   /* esp = &iret_exec #2; EBP = M[ebp] = iret_exec */                  
     asm volatile ("ret");   /* EIP = M[ESP],  ESP = ESP + 4*/   /* eip = iret_exec    ; esp = esp + 4 = switch for iret */
-    asm volatile ("iret_exec: iret");   
+    asm volatile ("iret_exec: iret");
 }
 
-void context_switch() {
+void context_switch(uint32_t next_pid) {
     cli();
-
-    struct pcb* current = current_pcb();
-
-    uint32_t terminal_id, next_terminal_id, next_pid;
-    if (current->pid > 3) {
-        terminal_id = current->parent->pid;
-    } else {
-        terminal_id = current->pid;
-    }
-
-    while (next_terminal_id != terminal_id) {
-        if (terminals[next_terminal_id].pid >= 3) {
-            next_pid = terminals[next_terminal_id].pid;
-            break;
-        } else if (next_terminal_id == active_terminal) {
-            next_pid = active_terminal;
-            break;
-        }
-    }
-
-    if (next_terminal_id == terminal_id) {
+    
+    volatile struct pcb *current = current_pcb();
+    volatile struct pcb *next = GET_PCB(next_pid);
+    if (current->pid == next->pid) {
         return;
     }
 
-    struct pcb* next = GET_PCB(next_pid);
-    
+    // page_table[VIDEO_MEMORY_PTE].
     page_directory[USER_ENTRY].MB.page_base_address = 2 + next_pid;
-    asm volatile (
-        "movl %%cr3, %%eax\n"
-        "movl %%eax, %%cr3\n"
-        :
-        :
-        : "%eax"
-    );
-
-    asm volatile (
-        "movl %%esp, %0 \n"
-        "movl %%ebp, %1 \n"
-        "movl %2, %%esp \n"
-        "movl %3, %%ebp \n"
-        : "=r"(current->esp), "=r"(current->ebp)
-        : "r"(next->esp), "r"(next->ebp)
-        : "%esp", "%ebp"
-    );
-
+    
+    current->esp0 = tss.esp0;
+    current->ss0 = tss.ss0;
     tss.esp0 = next->esp0;
     tss.ss0 = next->ss0;
 
-    sti();
+    asm volatile (
+        "movl %%cr3, %%ecx\n"
+        "movl %%ecx, %%cr3\n"
+        "movl %%ebp, %%eax \n"
+        "movl %%edx, %%ebp \n"
+        "sti\n"
+        "leave\n"
+        "ret\n"
+        : "=a"(current->ebp)
+        : "d"(next->ebp)
+        : "%ecx"
+    );
 }
+
+// void context_switch() {
+//     cli();
+
+//     struct pcb* current = current_pcb();
+
+//     uint32_t terminal_id, next_terminal_id, next_pid;
+//     if (current->pid > 3) {
+//         terminal_id = current->parent->pid;
+//     } else {
+//         terminal_id = current->pid;
+//     }
+
+//     while (next_terminal_id != terminal_id) {
+//         if (terminals[next_terminal_id].pid >= 3) {
+//             next_pid = terminals[next_terminal_id].pid;
+//             break;
+//         } else if (next_terminal_id == active_terminal) {
+//             next_pid = active_terminal;
+//             break;
+//         }
+//     }
+
+//     if (next_terminal_id == terminal_id) {
+//         return;
+//     }
+
+//     struct pcb* next = GET_PCB(next_pid);
+    
+//     page_directory[USER_ENTRY].MB.page_base_address = 2 + next_pid;
+//     asm volatile (
+//         "movl %%cr3, %%eax\n"
+//         "movl %%eax, %%cr3\n"
+//         :
+//         :
+//         : "%eax"
+//     );
+
+//     asm volatile (
+//         "movl %%esp, %0 \n"
+//         "movl %%ebp, %1 \n"
+//         "movl %2, %%esp \n"
+//         "movl %3, %%ebp \n"
+//         : "=r"(current->esp), "=r"(current->ebp)
+//         : "r"(next->esp), "r"(next->ebp)
+//         : "%esp", "%ebp"
+//     );
+
+//     tss.esp0 = next->esp0;
+//     tss.ss0 = next->ss0;
+
+//     sti();
+// }

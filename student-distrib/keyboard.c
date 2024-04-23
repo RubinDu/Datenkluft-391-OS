@@ -4,6 +4,7 @@
 #include "terminal.h"
 #include "system_call.h"
 #include "x86_desc.h"
+#include "scheduling.h"
 
 static char sc=0;                               //Scan char buffer
 static char lshift = 0;        
@@ -107,6 +108,15 @@ void keyboard_handler(){
     case 0xB8:      //Alt released
         alt = 0;
         break;
+    case 0x3B:
+    case 0x3C:
+    case 0x3D:
+        if (alt == 1) {
+            uint32_t next_terminal = (sc & 0xFF) - 0x3B;
+            switch_terminal(next_terminal, read_buf, &num_echoed);
+            context_switch(next_terminal);
+        }
+        break;
     default:
         if (sc < KEYS_SIZE && keys[(uint32_t)sc]){
             if (ctrl){
@@ -129,12 +139,15 @@ void keyboard_handler(){
                 switch (sc){
                 case 0x3B:      //Alt + F1
                     switch_terminal(0, read_buf, &num_echoed);
+                    context_switch(0);
                     break;
                 case 0x3C:      //Alt + F2
                     switch_terminal(1, read_buf, &num_echoed);
+                    context_switch(1);
                     break;
                 case 0x3D:      //Alt + F3
                     switch_terminal(2, read_buf, &num_echoed);
+                    context_switch(2);
                     break;
                 default:
                     break;
