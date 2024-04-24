@@ -31,7 +31,6 @@ typedef struct pcb {
     uint32_t esp0;
     uint16_t ss0;
     char args[READBUF_SIZE];
-    uint8_t terminal_idx;
 }pcb_t;
 
 

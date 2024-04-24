@@ -22,7 +22,7 @@ int32_t terminal_read(int32_t file, void* buf, int32_t nbytes){
     readcount = nbytes;
     reset_buf();        // Reset the keyboard buffer
     idle = 0;           // Set status to reading
-    while (!idle||current_pcb()->terminal_idx!=active_terminal);      // Wait reading to finish
+    while (!idle||*get_current_terminal()!=*get_active_terminal());      // Wait reading to finish
     memcpy(buf, readbuf, readcount);    // Copy the read buffer to the output buffer
     return readcount;   // Return actual number of bytes read
 }

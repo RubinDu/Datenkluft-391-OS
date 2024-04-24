@@ -7,6 +7,6 @@ extern void initiate_shells();
 
 // extern void context_switch();
 
-extern void context_switch(uint32_t next_pid);
+extern void context_switch(int next_pid);
 
 #endif

@@ -30,6 +30,10 @@ void scroll();
 void update_cursor();
 void switch_terminal(int terminal_idx, char* readbuf, int* num_echoed);
 
+terminal_t* get_terminal(uint32_t terminal_idx);
+int* get_active_terminal();
+int* get_current_terminal();
+
 /* Userspace address-check functions */
 int32_t bad_userspace_addr(const void* addr, int32_t len);
 int32_t safe_strncpy(int8_t* dest, const int8_t* src, int32_t n);

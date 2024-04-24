@@ -176,7 +176,13 @@ void entry(unsigned long magic, unsigned long addr) {
     /* Execute the first program ("shell") ... */
     clear();
     // execute((uint8_t*)"           shell   ");
-    initiate_shells();
+    //initiate_shells();
+    get_terminal(0)->pid = -1;
+    get_terminal(1)->pid = -1;
+    get_terminal(2)->pid = -1;
+    *get_current_terminal()=2;
+    pit_init(100);
+    pit_handler();
 
     /* Spin (nicely, so we don't chew up cycles) */
     asm volatile (".1: hlt; jmp .1;");

@@ -30,6 +30,12 @@ int32_t halt(uint8_t status){
         return;
     }
 
+    for (i = 0; i < NUM_TERMINAL; i++)
+    if (get_terminal(i)->pid == current_pcb()->pid){
+        get_terminal(i)->pid = current_pcb()->parent->pid;
+        break;
+    }
+
     /* **************************************************
      * *          Restore Parent Paging & TSS           *
      * **************************************************/
@@ -84,6 +90,7 @@ int32_t halt(uint8_t status){
  * RETURN: 0 if created successfully, 1 otherwise
  */
 int32_t execute(const uint8_t* command){
+    cli();
     int i, pid;
     uint8_t filename[READBUF_SIZE] = {0};   /* file name */
     uint8_t args[READBUF_SIZE] = {0};       /* arguments */
@@ -143,7 +150,7 @@ int32_t execute(const uint8_t* command){
         return -1;
 
     /* gets the index of the new process */
-    for (pid = 3; pid < MAX_TASKS; pid++)
+    for (pid = 0; pid < MAX_TASKS; pid++)
         if (!(GET_PCB(pid)->present))
             break;
 
@@ -200,6 +207,20 @@ int32_t execute(const uint8_t* command){
     tss.esp0 = KSTACK_START - KSTACK_SIZE * pid;
     tss.ss0 = KERNEL_DS;
 
+    for (i = 0; i < NUM_TERMINAL; i++)
+        if (get_terminal(i)->pid == -1){
+            get_terminal(i)->pid = i;
+            goto found;
+        }
+
+    for (i = 0; i < NUM_TERMINAL; i++)
+        if (get_terminal(i)->pid == current_pcb()->pid){
+            get_terminal(i)->pid = pid;
+            break;
+        }
+    found:
+
+    pcb->esp0 = tss.esp0;
     /* **************************************************
      * *           Prepare for Context Switch           *
      * **************************************************/
@@ -214,6 +235,7 @@ int32_t execute(const uint8_t* command){
         "movw %w0, %%ds\n"
         "pushl %0\n"      /* USER_DS */
         "pushl %1\n"      /* USER_STACK */
+        "sti\n"
         "pushfl\n"        /* eflags */
         "pushl %2\n"      /* USER_CS */
         "pushl %3\n"      /* eip */

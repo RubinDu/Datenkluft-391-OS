@@ -15,6 +15,9 @@ static int screen_x;
 static int screen_y;
 static char* video_mem = (char *)VIDEO;
 
+static terminal_t terminals[NUM_TERMINAL];            //Array of terminals
+static uint32_t active_terminal=0, current_terminal=0;                        //Index of active terminal
+
 /* void clear(void);
  * Inputs: void
  * Return Value: none
@@ -25,13 +28,13 @@ void clear(void) {
         *(uint8_t *)(video_mem + VIDEO_SIZE + (i << 1)) = ' ';
         *(uint8_t *)(video_mem + VIDEO_SIZE + (i << 1) + 1) = ATTRIB;
     }
-    if (current_pcb()->terminal_idx==active_terminal){
+    if (current_terminal==active_terminal){
         screen_x = 0;
         screen_y = 0;
     }
     else{
-        terminals[current_pcb()->terminal_idx].cx = 0;
-        terminals[current_pcb()->terminal_idx].cy = 0;
+        terminals[current_terminal].cx = 0;
+        terminals[current_terminal].cy = 0;
     }
     update_cursor();
 }
@@ -225,7 +228,7 @@ void putc(uint8_t c) {
 }
 
 void echo (uint8_t c){
-    if (current_pcb()->terminal_idx==active_terminal)
+    if (current_terminal==active_terminal)
         putc(c);
     else{
         int cache_x = screen_x, cache_y = screen_y;
@@ -581,4 +584,16 @@ void switch_terminal(int terminal_idx, char* readbuf, int* num_echoed){
     *num_echoed = terminals[active_terminal].num_echoed;
 
     update_cursor();
+}
+
+terminal_t* get_terminal(uint32_t terminal_idx){
+    return &terminals[terminal_idx];
+}
+
+int* get_active_terminal(){
+    return &active_terminal;
+}
+
+int* get_current_terminal(){
+    return &current_terminal;
 }
