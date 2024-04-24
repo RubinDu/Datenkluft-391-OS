@@ -81,7 +81,7 @@ int32_t terminal_close(int32_t file){
 *   SIDE EFFECTS: Resumes terminal_read, return to idle state at completion
 */
 void end_of_line(char* buf){
-    terminal_t *reading_terminal=(*get_active_terminal());
+    terminal_t *reading_terminal=get_terminal(*get_active_terminal());
     if (reading_terminal->idle)                           // If terminal is idle, return
         return;
     int i;

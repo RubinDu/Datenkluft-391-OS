@@ -58,8 +58,8 @@ void pit_handler() {
         page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + next_terminal + 2;
     }
 
+    sync_terminal();    
     *get_current_terminal() = next_terminal;                                    /* update the current terminal */
-    sync_terminal();
     
     if (get_terminal(next_terminal)->pid == -1)                                 /* if the task going to switch to isn't running */
         execute((uint8_t*)"shell");

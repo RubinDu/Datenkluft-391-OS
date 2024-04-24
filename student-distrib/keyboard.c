@@ -108,14 +108,6 @@ void keyboard_handler(){
     case 0xB8:      //Alt released
         alt = 0;
         break;
-//    case 0x3B:
-//    case 0x3C:
-//    case 0x3D:
-//        if (alt == 1) {
-//            uint32_t next_terminal = (sc & 0xFF) - 0x3B;
-//            switch_terminal(next_terminal, read_buf, &num_echoed);
-//        }
-//        break;
     default:
         if (sc < KEYS_SIZE && keys[(uint32_t)sc]){
             if (ctrl){
@@ -143,6 +135,15 @@ void keyboard_handler(){
                     switch_terminal(1, read_buf, &num_echoed);
                     break;
                 case 0x3D:      //Alt + F3
+                    switch_terminal(2, read_buf, &num_echoed);
+                    break;
+                case 0x2:      //Somehow my computer can't intercept Alt + FX
+                    switch_terminal(0, read_buf, &num_echoed);
+                    break;
+                case 0x3:
+                    switch_terminal(1, read_buf, &num_echoed);
+                    break;
+                case 0x4:
                     switch_terminal(2, read_buf, &num_echoed);
                     break;
                 default:
