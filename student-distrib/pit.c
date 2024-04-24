@@ -41,7 +41,7 @@ void pit_handler() {
     //}
     int current_terminal = *get_current_terminal();
     int next_terminal = (*get_current_terminal()+1)%3;
-    pcb_t *current = current_pcb();
+    pcb_t *current = GET_PCB(get_terminal(current_terminal)->pid);
     pcb_t *next;
 
     if (get_terminal(*get_current_terminal())->pid != -1){                /* If the kernel has been set up, if not, let execute set them */
@@ -59,11 +59,14 @@ void pit_handler() {
     }
 
     *get_current_terminal() = next_terminal;                                    /* update the current terminal */
+    sync_terminal();
     
     if (get_terminal(next_terminal)->pid == -1)                                 /* if the task going to switch to isn't running */
         execute((uint8_t*)"shell");
     
     next = GET_PCB(get_terminal(next_terminal)->pid);
+
+    page_directory[USER_ENTRY].MB.page_base_address = 2 + next->pid;
 
     tss.esp0=next->esp0;
     
@@ -73,10 +76,13 @@ void pit_handler() {
 
         "movl %0, %%ebp\n"       /* set new EBP, used by return */
 
+        "leave\n" 
+        "ret\n" 
         :
         : "r"(next->ebp)
         : "%ecx"
     );
+    return;
 
     //context_switch(next_pid);                           /* switch to that process */
 }
