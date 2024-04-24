@@ -105,42 +105,42 @@
  * OUTPUT: none
  * RETURN: none
  */
-void context_switch(int next_pid) {
-    cli();
-
-    if (next_pid == -1){
-        sti();
-        *get_current_terminal()=*get_current_terminal()-1;
-        execute((uint8_t*)"shell");
-    }
-    
-    volatile struct pcb *current = current_pcb();
-    volatile struct pcb *next = GET_PCB(next_pid);
-    if (current->pid == next->pid) {                /* don't need to switch */
-        return;
-    }
-
-    page_directory[USER_ENTRY].MB.page_base_address = 2 + next_pid;
-    
-    current->esp0 = tss.esp0;       /* store old tss*/
-    current->ss0 = tss.ss0;
-    tss.esp0 = next->esp0;          /* set new tss */
-    tss.ss0 = next->ss0;
-
-    asm volatile (
-        "movl %%cr3, %%ecx\n"       /* flush the TLB*/
-        "movl %%ecx, %%cr3\n"
-
-        "movl %%ebp, %0\n"    
-
-        "movl %1, %%ebp\n"       /* set new EBP, used by LEAVE & RET */
-
-        : "=r"(current->ebp)
-        : "r"(next->ebp)
-        : "%ecx"
-    );
-    sti();
-}
+//void context_switch(int next_pid) {
+//    cli();
+//
+//    if (next_pid == -1){
+//        sti();
+//        *get_current_terminal()=*get_current_terminal()-1;
+//        execute((uint8_t*)"shell");
+//    }
+//    
+//    volatile struct pcb *current = current_pcb();
+//    volatile struct pcb *next = GET_PCB(next_pid);
+//    if (current->pid == next->pid) {                /* don't need to switch */
+//        return;
+//    }
+//
+//    page_directory[USER_ENTRY].MB.page_base_address = 2 + next_pid;
+//    
+//    current->esp0 = tss.esp0;       /* store old tss*/
+//    current->ss0 = tss.ss0;
+//    tss.esp0 = next->esp0;          /* set new tss */
+//    tss.ss0 = next->ss0;
+//
+//    asm volatile (
+//        "movl %%cr3, %%ecx\n"       /* flush the TLB*/
+//        "movl %%ecx, %%cr3\n"
+//
+//        "movl %%ebp, %0\n"    
+//
+//        "movl %1, %%ebp\n"       /* set new EBP, used by LEAVE & RET */
+//
+//        : "=r"(current->ebp)
+//        : "r"(next->ebp)
+//        : "%ecx"
+//    );
+//    sti();
+//}
 
 // void context_switch() {
 //     cli();

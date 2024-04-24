@@ -15,6 +15,7 @@ pte_t user_video_memory_pt[PAGE_TABLE_COUNT] __attribute__((aligned(PAGING_ALIGN
  * RETURNS: never used
  */
 int32_t halt(uint8_t status){
+    cli();
     int i;
     pcb_t* pcb = current_pcb();
     
@@ -30,17 +31,19 @@ int32_t halt(uint8_t status){
         return;
     }
 
-    for (i = 0; i < NUM_TERMINAL; i++)
-    if (get_terminal(i)->pid == current_pcb()->pid){
-        get_terminal(i)->pid = current_pcb()->parent->pid;
-        break;
-    }
+    //for (i = 0; i < NUM_TERMINAL; i++)
+    //if (get_terminal(i)->pid == current_pcb()->pid){
+    //    get_terminal(i)->pid = current_pcb()->parent->pid;
+    //    break;
+    //}
+
+    get_terminal(*get_current_terminal())->pid = current_pcb()->parent->pid;
 
     /* **************************************************
      * *          Restore Parent Paging & TSS           *
      * **************************************************/
     page_directory[USER_ENTRY].MB.page_base_address = 2 + pcb->parent->pid; /* shell */
-    tss.esp0 = KSTACK_START - KSTACK_SIZE * pcb->parent->pid;
+    tss.esp0 = pcb->parent->esp0;
     tss.ss0 = KERNEL_DS;
 
     asm volatile (
@@ -56,7 +59,7 @@ int32_t halt(uint8_t status){
             "movl $0x100, %%eax\n"
             "movl %0, %%ebp\n"      /* restores the ebp */
             :
-            : "r"(pcb->ebp)
+            : "r"(pcb->eebp)
             : "%eax", "%ebp"
         );
         exception_occurred = 0;
@@ -66,12 +69,13 @@ int32_t halt(uint8_t status){
             "movb %b0, %%al\n"
             "movl %1, %%ebp\n"      /* restores the ebp */
             :
-            : "r"(status), "r"(pcb->ebp)
+            : "r"(status), "r"(pcb->eebp)
             : "%eax", "%ebp"
         );
     }
 
     asm volatile(               /* we are logically in remaining part of */
+        "sti\n"
         "leave\n"               /* execute handler, because we reset ebp */
         "ret\n"                 /* we return to execute actually.        */
     );
@@ -231,6 +235,8 @@ int32_t execute(const uint8_t* command){
         "movl %%ebp, %0\n"
         : "=g"(pcb->ebp)
     );
+
+    pcb->eebp = pcb->ebp;
 
     /* Create its own context switch stack */
     asm volatile (
