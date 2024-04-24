@@ -39,16 +39,44 @@ void pit_handler() {
     //} else {
     //    next_pid = next_terminal;                       /* the terminal is idle */
     //}
-    uint32_t next_terminal = (*get_current_terminal() + 1) % 3;
-    uint32_t next_pid = get_terminal(next_terminal)->pid;
+    int current_terminal = *get_current_terminal();
+    int next_terminal = (*get_current_terminal()+1)%3;
+    pcb_t *current = current_pcb();
+    pcb_t *next;
 
-    if (next_terminal == *get_active_terminal()) {             /* show the content */
+    if (get_terminal(*get_current_terminal())->pid != -1){                /* If the kernel has been set up, if not, let execute set them */
+        asm volatile (
+            "movl %%ebp, %0\n"
+            : "=r"(current->ebp)
+        );
+        current->esp0 = tss.esp0;
+    }
+
+    if (next_terminal == *get_active_terminal()) {                              /* show the content */
         page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE;
-    } else {                                            /* don't need to show, but need to update */
+    } else {                                                                    /* don't need to show, but need to update */
         page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + next_terminal + 2;
     }
 
-    *get_current_terminal() = next_terminal;             /* update the current terminal */
+    *get_current_terminal() = next_terminal;                                    /* update the current terminal */
+    
+    if (get_terminal(next_terminal)->pid == -1)                                 /* if the task going to switch to isn't running */
+        execute((uint8_t*)"shell");
+    
+    next = GET_PCB(get_terminal(next_terminal)->pid);
 
-    context_switch(next_pid);                           /* switch to that process */
+    tss.esp0=next->esp0;
+    
+    asm volatile (
+        "movl %%cr3, %%ecx\n"       /* flush the TLB*/
+        "movl %%ecx, %%cr3\n"
+
+        "movl %0, %%ebp\n"       /* set new EBP, used by return */
+
+        :
+        : "r"(next->ebp)
+        : "%ecx"
+    );
+
+    //context_switch(next_pid);                           /* switch to that process */
 }

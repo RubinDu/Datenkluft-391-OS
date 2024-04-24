@@ -231,6 +231,7 @@ typedef struct terminal {
     uint8_t num_echoed;
     uint8_t cx;
     uint8_t cy;
+    uint8_t idle;
     uint32_t pid;
 } terminal_t;
 

@@ -180,6 +180,9 @@ void entry(unsigned long magic, unsigned long addr) {
     get_terminal(0)->pid = -1;
     get_terminal(1)->pid = -1;
     get_terminal(2)->pid = -1;
+    get_terminal(0)->idle = 1;
+    get_terminal(1)->idle = 1;
+    get_terminal(2)->idle = 1;
     *get_current_terminal()=2;
     pit_init(100);
     pit_handler();

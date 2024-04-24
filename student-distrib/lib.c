@@ -597,3 +597,12 @@ int* get_active_terminal(){
 int* get_current_terminal(){
     return &current_terminal;
 }
+
+void sync_terminal(){
+    int next_terminal = (current_terminal+1) % 3;
+    terminals[current_terminal].cx = screen_x;
+    terminals[current_terminal].cy = screen_y;
+    screen_x = terminals[next_terminal].cx;
+    screen_y = terminals[next_terminal].cy;
+    update_cursor();
+}

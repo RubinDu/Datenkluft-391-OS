@@ -4,7 +4,6 @@
 #include "system_call.h"
 #include "x86_desc.h"
 
-volatile static char idle = 1;   // 1 if terminal is idle, 0 if terminal is reading
 static char readbuf[READBUF_SIZE];            // pointer to the read buffer
 static int32_t readcount;        // number of bytes to read
 
@@ -19,10 +18,11 @@ static int32_t readcount;        // number of bytes to read
 *   SIDE EFFECTS: While user haven't pressed enter, spins and waits for input
 */
 int32_t terminal_read(int32_t file, void* buf, int32_t nbytes){
+    terminal_t *reading_terminal=get_terminal(*get_current_terminal());
     readcount = nbytes;
     reset_buf();        // Reset the keyboard buffer
-    idle = 0;           // Set status to reading
-    while (!idle||*get_current_terminal()!=*get_active_terminal());      // Wait reading to finish
+    reading_terminal->idle=0;           // Set status to reading
+    while (!(reading_terminal->idle)||*get_current_terminal()!=*get_active_terminal());      // Wait reading to finish
     memcpy(buf, readbuf, readcount);    // Copy the read buffer to the output buffer
     return readcount;   // Return actual number of bytes read
 }
@@ -81,7 +81,8 @@ int32_t terminal_close(int32_t file){
 *   SIDE EFFECTS: Resumes terminal_read, return to idle state at completion
 */
 void end_of_line(char* buf){
-    if (idle)                           // If terminal is idle, return
+    terminal_t *reading_terminal=(*get_active_terminal());
+    if (reading_terminal->idle)                           // If terminal is idle, return
         return;
     int i;
     memset(readbuf, '\n', READBUF_SIZE);  // Clear the read buffer
@@ -94,5 +95,5 @@ void end_of_line(char* buf){
     }
     ((char*)readbuf)[i-1] ='\n';        // Add newline to the end of the read buffer
     readcount = i;                      // Set actual number of bytes read
-    idle = 1;                           // Set terminal to idle
+    reading_terminal->idle = 1;                           // Set terminal to idle
 }

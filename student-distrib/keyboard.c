@@ -91,14 +91,14 @@ void keyboard_handler(){
         break;
     case 0x0E:      //Backspace pressed
         if (num_echoed){
-            putc('\b');
+            echo('\b');
             num_echoed --;
             if (num_echoed<READBUF_SIZE-1)
                 read_buf[num_echoed]='\n';
         }
         break;
     case 0x1C:      //Enter pressed
-        putc('\n');
+        echo('\n');
         end_of_line(read_buf);    // Return contents in the read buffer to terminal and resume terminal_read
         reset_buf();
         break;
@@ -108,14 +108,14 @@ void keyboard_handler(){
     case 0xB8:      //Alt released
         alt = 0;
         break;
-    case 0x3B:
-    case 0x3C:
-    case 0x3D:
-        if (alt == 1) {
-            uint32_t next_terminal = (sc & 0xFF) - 0x3B;
-            switch_terminal(next_terminal, read_buf, &num_echoed);
-        }
-        break;
+//    case 0x3B:
+//    case 0x3C:
+//    case 0x3D:
+//        if (alt == 1) {
+//            uint32_t next_terminal = (sc & 0xFF) - 0x3B;
+//            switch_terminal(next_terminal, read_buf, &num_echoed);
+//        }
+//        break;
     default:
         if (sc < KEYS_SIZE && keys[(uint32_t)sc]){
             if (ctrl){
@@ -138,15 +138,12 @@ void keyboard_handler(){
                 switch (sc){
                 case 0x3B:      //Alt + F1
                     switch_terminal(0, read_buf, &num_echoed);
-                    context_switch(0);
                     break;
                 case 0x3C:      //Alt + F2
                     switch_terminal(1, read_buf, &num_echoed);
-                    context_switch(1);
                     break;
                 case 0x3D:      //Alt + F3
                     switch_terminal(2, read_buf, &num_echoed);
-                    context_switch(2);
                     break;
                 default:
                     break;
@@ -157,12 +154,12 @@ void keyboard_handler(){
                 if ((az&&(!(lshift||rshift)!=!cap))||(!az&&(lshift||rshift))){    //If alphabet, check if only one of shift and cap is active. If not, check if shift is active
                     if (num_echoed<READBUF_SIZE-1)                              //If buffer isn't full, put character into buffer
                         read_buf[num_echoed]=keys_shifted[(uint32_t)sc];
-                    putc(keys_shifted[(uint32_t)sc]);                           //Print shifted character
+                    echo(keys_shifted[(uint32_t)sc]);                           //Print shifted character
                 }
                 else{                           
                     if (num_echoed<READBUF_SIZE-1)                              //If buffer isn't full, put character into buffer        
                         read_buf[num_echoed]=keys[(uint32_t)sc];
-                    putc(keys[(uint32_t)sc]);                                   //Print character         
+                    echo(keys[(uint32_t)sc]);                                   //Print character         
                 }
                 num_echoed++;
             }
