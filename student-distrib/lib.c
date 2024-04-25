@@ -31,10 +31,12 @@ void clear(void) {
     if (current_terminal==active_terminal){
         screen_x = 0;
         screen_y = 0;
+        terminals[active_terminal].cx = 0;
+        terminals[active_terminal].cy = 0;
     }
     else{
-        terminals[current_terminal].cx = 0;
-        terminals[current_terminal].cy = 0;
+        terminals[active_terminal].cx = 0;
+        terminals[active_terminal].cy = 0;
     }
     update_cursor();
 }
@@ -570,18 +572,14 @@ void update_cursor(){
 	outb((uint8_t) ((pos >> 8) & 0xFF), 0x3D5);
 }
 
-void switch_terminal(int terminal_idx, char* readbuf, int* num_echoed){
+void switch_terminal(int terminal_idx){
     if (terminal_idx==active_terminal)
         return;
-    memcpy(terminals[active_terminal].terminal_buf, readbuf, READBUF_SIZE);
-    terminals[active_terminal].num_echoed = *num_echoed;
 
     memcpy(VIDEO+(active_terminal+2)*VIDEO_SIZE, VIDEO+VIDEO_SIZE, VIDEO_SIZE);
     memcpy(VIDEO+VIDEO_SIZE, VIDEO+(terminal_idx+2)*VIDEO_SIZE, VIDEO_SIZE);
 
     active_terminal = terminal_idx;
-    memcpy(readbuf, terminals[active_terminal].terminal_buf, READBUF_SIZE);
-    *num_echoed = terminals[active_terminal].num_echoed;
 
     update_cursor();
 }

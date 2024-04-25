@@ -28,7 +28,7 @@ int8_t* strncpy(int8_t* dest, const int8_t*src, uint32_t n);
 void echo(uint8_t c);
 void scroll();
 void update_cursor();
-void switch_terminal(int terminal_idx, char* readbuf, int* num_echoed);
+void switch_terminal(int terminal_idx);
 
 terminal_t* get_terminal(uint32_t terminal_idx);
 int* get_active_terminal();

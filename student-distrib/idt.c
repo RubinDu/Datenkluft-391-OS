@@ -16,147 +16,107 @@ typedef void (*exceptions)();
  *   SIDE EFFECTS: Prints corresponding exception (or unimplemented system call) and freezes the kernel
  */
 void EXP0(){
-    cli();                                      //masks interrupts                                    //clears the terminal as "blue screen"
     printf(" Exception: Divide by zero\n");     //prints the exception
-    sti();
     exception_occurred = 1;
     halt(255);                                 
 }
 void EXP1(){
-    cli();
     printf(" Exception: Debug\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP2(){
-    cli();
     printf(" Exception: Non-maskable interrupt\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP3(){
-    cli();
     printf(" Exception: Breakpoint\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP4(){
-    cli();
     printf(" Exception: Overflow\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP5(){
-    cli();
     printf(" Exception: Bound Range Exceeded\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP6(){
-    cli();
     printf(" Exception: Invalid Opcode\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP7(){
-    cli();
     printf(" Exception: Device Not Available\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP8(){
-    cli();
     printf(" Exception: Double Fault\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP9(){
-    cli();
     printf(" Exception: Coprocessor Segment Overrun\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXPA(){
-    cli();
     printf(" Exception: Invalid TSS\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXPB(){
-    cli();
     printf(" Exception: Segment Not Present\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXPC(){
-    cli();
     printf(" Exception: Stack-Segment Fault\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXPD(){
-    cli();
     printf(" Exception: General Protection\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXPE(){
-    cli();
     uint32_t page_fault_linear_addr;
     asm volatile (
         "movl %%cr2, %0" : "=r" (page_fault_linear_addr)
                          :
     );
     printf(" Exception: Page Fault, at %d\n", page_fault_linear_addr);
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXPF(){
-    cli();
     printf(" Exception: Reserved\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP10(){
-    cli();
     printf(" Exception: x87 FPU Floating-Point Error\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP11(){
-    cli();
     printf(" Exception: Alignment Check\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP12(){
-    cli();
     printf(" Exception: Machine Check\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }
 void EXP13(){
-    cli();
     printf(" Exception: SIMD Floating-Point Exception\n");
-    sti();
     exception_occurred = 1;
     halt(255);
 }

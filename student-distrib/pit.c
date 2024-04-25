@@ -69,7 +69,23 @@ void pit_handler() {
     page_directory[USER_ENTRY].MB.page_base_address = 2 + next->pid;
 
     tss.esp0=next->esp0;
+
+    if (get_terminal(next_terminal)->halt){    //If scheduled to be halted
+        asm volatile (
+        "movl %%cr3, %%ecx\n"       /* flush the TLB*/
+        "movl %%ecx, %%cr3\n"
+
+        "movl %0, %%ebp\n"       /* set new EBP, go to that kernel stack and halt*/
+
+        "leave\n"               
+        :
+        : "r"(next->ebp)
+        : "%ecx"
+        );
+        halt(128);
+    }
     
+
     asm volatile (
         "movl %%cr3, %%ecx\n"       /* flush the TLB*/
         "movl %%ecx, %%cr3\n"
@@ -82,7 +98,4 @@ void pit_handler() {
         : "r"(next->ebp)
         : "%ecx"
     );
-    return;
-
-    //context_switch(next_pid);                           /* switch to that process */
 }

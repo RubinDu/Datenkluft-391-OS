@@ -53,6 +53,6 @@ int32_t terminal_close(int32_t file);
 *   RETURN VALUE: none
 *   SIDE EFFECTS: Resumes terminal_read, return to idle state at completion
 */
-void end_of_line(char* buf);
+void end_of_line();
 
 #endif /* _TERMINAL_H */

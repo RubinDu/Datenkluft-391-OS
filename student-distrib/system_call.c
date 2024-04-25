@@ -23,20 +23,18 @@ int32_t halt(uint8_t status){
      * *            Reclaims Owned Resources            *
      * **************************************************/
     pcb->present = 0;
+    get_terminal(*get_active_terminal())->halt = 0;
+
     for (i = 0; i < MAX_FILES; ++i) {
         pcb->fd[i].flags = 0;
     }
 
     if (pcb->pid < 3) { /* if exit the shell, recreate it ^-^ */
+        pcb->present = 0;
+        execute((uint8_t*)"shell");
         return;
     }
-
-    //for (i = 0; i < NUM_TERMINAL; i++)
-    //if (get_terminal(i)->pid == current_pcb()->pid){
-    //    get_terminal(i)->pid = current_pcb()->parent->pid;
-    //    break;
-    //}
-
+    
     get_terminal(*get_current_terminal())->pid = current_pcb()->parent->pid;
 
     /* **************************************************

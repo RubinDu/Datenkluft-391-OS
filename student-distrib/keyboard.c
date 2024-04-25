@@ -14,8 +14,7 @@ static char cap_released = 1;
 static char ctrl = 0;         
 static char az = 0;
 static char alt = 0;
-static int num_echoed=0;
-static char read_buf[READBUF_SIZE];                      //Buffer for read
+static terminal_t *active_terminal;                      //Buffer for read
 static char keys[KEYS_SIZE]={                          //ps/2 keyboard scan char map for numbers, alphabet, and some symbols
     0,   0,   '1', '2', '3', '4', '5', '6', 
     '7', '8', '9', '0', '-', '=', 0,  '\t',
@@ -45,7 +44,9 @@ static char keys_shifted[KEYS_SIZE]={                    //ps/2 keyboard scan ch
  */
 void keyboard_init(){                    
     enable_irq(KEYBOARD_IRQ);    //Keyboard is connected to IR1 of the master PIC, which is irq 1
-    memset(read_buf, '\n', READBUF_SIZE);
+    memset(get_terminal(0)->terminal_buf, '\n', READBUF_SIZE);
+    memset(get_terminal(1)->terminal_buf, '\n', READBUF_SIZE);
+    memset(get_terminal(2)->terminal_buf, '\n', READBUF_SIZE);
 }
 
 /* 
@@ -57,6 +58,7 @@ void keyboard_init(){
  *   SIDE EFFECTS: Reads from keyboard port 0x60 and prints the char (if valid) to screen
  */
 void keyboard_handler(){
+    active_terminal = get_terminal(*get_active_terminal());
     sc = inb(KEYBOARD_PORT);        //Scans from keyboard port 0x60
     switch (sc&0xFF)                //Only lower 8 bits are valid
     {
@@ -90,17 +92,18 @@ void keyboard_handler(){
         ctrl = 0;
         break;
     case 0x0E:      //Backspace pressed
-        if (num_echoed){
+        if (active_terminal->num_echoed>0){
             echo('\b');
-            num_echoed --;
-            if (num_echoed<READBUF_SIZE-1)
-                read_buf[num_echoed]='\n';
+            active_terminal->num_echoed --;
+            if (active_terminal->num_echoed<READBUF_SIZE-1)
+                active_terminal->terminal_buf[active_terminal->num_echoed]='\n';
         }
         break;
     case 0x1C:      //Enter pressed
         echo('\n');
-        end_of_line(read_buf);    // Return contents in the read buffer to terminal and resume terminal_read
-        reset_buf();
+        end_of_line();    // Return contents in the read buffer to terminal and resume terminal_read
+        active_terminal->num_echoed = 0;
+        memset(active_terminal->terminal_buf, '\n', READBUF_SIZE);    //Resets the read buffer to all newlines
         break;
     case 0x38:      //Alt pressed
         alt = 1;
@@ -116,35 +119,32 @@ void keyboard_handler(){
                     clear();
                     break;
                 case 0x2E:      //Ctrl + C
-                    reset_buf();
-                    send_eoi(KEYBOARD_IRQ);      //Send end of interrupt
-                    sti();
-                    halt(128);
+                    active_terminal->halt = 1;      //Tell scheduler to halt the process running on active terminal
                     break;
                 default:
                     break;
                 }
             }
-            if (alt)
+            else if (alt)
             {
                 switch (sc){
                 case 0x3B:      //Alt + F1
-                    switch_terminal(0, read_buf, &num_echoed);
+                    switch_terminal(0);
                     break;
                 case 0x3C:      //Alt + F2
-                    switch_terminal(1, read_buf, &num_echoed);
+                    switch_terminal(1);
                     break;
                 case 0x3D:      //Alt + F3
-                    switch_terminal(2, read_buf, &num_echoed);
+                    switch_terminal(2);
                     break;
                 case 0x2:      //Somehow my computer can't intercept Alt + FX
-                    switch_terminal(0, read_buf, &num_echoed);
+                    switch_terminal(0);
                     break;
                 case 0x3:
-                    switch_terminal(1, read_buf, &num_echoed);
+                    switch_terminal(1);
                     break;
                 case 0x4:
-                    switch_terminal(2, read_buf, &num_echoed);
+                    switch_terminal(2);
                     break;
                 default:
                     break;
@@ -153,16 +153,16 @@ void keyboard_handler(){
             else{
                 az=keys[(uint32_t)sc] >= 'a' && keys[(uint32_t)sc] <= 'z';      //Check if the key pressed is an alphabet
                 if ((az&&(!(lshift||rshift)!=!cap))||(!az&&(lshift||rshift))){    //If alphabet, check if only one of shift and cap is active. If not, check if shift is active
-                    if (num_echoed<READBUF_SIZE-1)                              //If buffer isn't full, put character into buffer
-                        read_buf[num_echoed]=keys_shifted[(uint32_t)sc];
+                    if (active_terminal->num_echoed<READBUF_SIZE-1)                              //If buffer isn't full, put character into buffer
+                        active_terminal->terminal_buf[active_terminal->num_echoed]=keys_shifted[(uint32_t)sc];
                     echo(keys_shifted[(uint32_t)sc]);                           //Print shifted character
                 }
                 else{                           
-                    if (num_echoed<READBUF_SIZE-1)                              //If buffer isn't full, put character into buffer        
-                        read_buf[num_echoed]=keys[(uint32_t)sc];
+                    if (active_terminal->num_echoed<READBUF_SIZE-1)                              //If buffer isn't full, put character into buffer        
+                        active_terminal->terminal_buf[active_terminal->num_echoed]=keys[(uint32_t)sc];
                     echo(keys[(uint32_t)sc]);                                   //Print character         
                 }
-                num_echoed++;
+                active_terminal->num_echoed++;
             }
         }
         break;
@@ -179,6 +179,6 @@ void keyboard_handler(){
  *   SIDE EFFECTS: Clears read buffer and counter
  */
 void reset_buf(){
-    num_echoed = 0;
-    memset(read_buf, '\n', READBUF_SIZE);    //Resets the read buffer to all newlines
+    get_terminal(*get_current_terminal())->num_echoed = 0;
+    memset(get_terminal(*get_current_terminal())->terminal_buf, '\n', READBUF_SIZE);    //Resets the read buffer to all newlines
 }

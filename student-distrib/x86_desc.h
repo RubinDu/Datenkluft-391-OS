@@ -226,13 +226,13 @@ typedef union pte_t {
 } pte_t;
 
 typedef struct terminal {
-    uint8_t present;
     uint8_t terminal_buf[READBUF_SIZE];
     uint8_t num_echoed;
     uint8_t cx;
     uint8_t cy;
     uint8_t idle;
     uint32_t pid;
+    uint8_t halt;
 } terminal_t;
 
 /* Sets runtime parameters for an IDT entry */
