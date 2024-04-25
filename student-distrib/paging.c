@@ -21,6 +21,7 @@ void paging_init() {
     /* zero all of them */
     memset((void*)page_directory, 0, PAGE_DIRECTORY_COUNT * sizeof(pde_t));
     memset((void*)page_table, 0, PAGE_TABLE_COUNT * sizeof(pte_t));
+    memset((void*)page_table_user_vidmem, 0, PAGE_TABLE_COUNT * sizeof(pte_t));
     
     /* PDE #0: the first 4MB should be further split into 4KB subpages */
     page_directory[0].KB.present = 1;
@@ -34,10 +35,12 @@ void paging_init() {
 
     /* PDE/PTE 2-1024: set necessary things, not presented*/
     page_table[1].page_base_address = 1;
+    page_table_user_vidmem[1].page_base_address = 1;
     for (i = 2; i < PAGE_DIRECTORY_COUNT; ++i) {
         page_directory[i].MB.page_size = 1; /* assign to 4MB pages for all remaining pages*/
         page_directory[i].MB.page_base_address = i; /* assign each address space to a specific page */
         page_table[i].page_base_address = i;
+        page_table_user_vidmem[i].page_base_address = i;
     }
     
     page_table[VIDEO_MEMORY_PTE].present = 1; /* the page storing the video memory should be presented */
@@ -48,6 +51,15 @@ void paging_init() {
     page_table[VIDEO_MEMORY_PTE+4].present = 1; /* Terminal 2 video memory page */
 
     page_table[VIDEO_MEMORY_PTE+1].page_base_address--; /* Set to map the video memory */
+    
+    page_table_user_vidmem[VIDEO_MEMORY_PTE].user_supervisor = 1;
+    page_table_user_vidmem[VIDEO_MEMORY_PTE].read_write = 1;
+    
+    page_directory[VIDEO_MEMORY_PTE].KB.present = 1;
+    page_directory[VIDEO_MEMORY_PTE].KB.user_supervisor = 1;
+    page_directory[VIDEO_MEMORY_PTE].KB.read_write = 1;
+    page_directory[VIDEO_MEMORY_PTE].KB.page_size = 0;          /* we need one subpage */
+    page_directory[VIDEO_MEMORY_PTE].KB.page_table_base_address = ((uint32_t)page_table_user_vidmem >> 12);
 
     /* **************************************************
      * *          Set Page Directory to CR3             *

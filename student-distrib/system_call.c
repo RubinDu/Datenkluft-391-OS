@@ -4,7 +4,7 @@
 /* nonzero if exception occurs. */
 extern uint8_t exception_occurred;
 
-pte_t user_video_memory_pt[PAGE_TABLE_COUNT] __attribute__((aligned(PAGING_ALIGNMENT)));
+extern pte_t page_table_user_vidmem[PAGE_TABLE_COUNT];
 
 /**
  * int32_t halt(uint8_t status):
@@ -23,6 +23,7 @@ int32_t halt(uint8_t status){
      * *            Reclaims Owned Resources            *
      * **************************************************/
     pcb->present = 0;
+    pcb->vidmap = 0;
     get_terminal(*get_active_terminal())->halt = 0;
 
     for (i = 0; i < MAX_FILES; ++i) {
@@ -397,42 +398,24 @@ int32_t vidmap(uint8_t** screen_start) {
 
     int i;
 
-    /* **************************************************
-     * *       Initializes the page table at PDE        *
-     * **************************************************/
-    memset(user_video_memory_pt, 0, PAGE_TABLE_COUNT * sizeof(pte_t));
-    for (i = 0; i < PAGE_TABLE_COUNT; ++i) {
-        user_video_memory_pt[i].page_base_address = i;
+    current_pcb()->vidmap = 1;
+    page_table_user_vidmem[VIDEO_MEMORY_PTE].present = 1;
+    if (*get_active_terminal() == *get_current_terminal()) {
+        page_table_user_vidmem[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE;
+    } else {
+        page_table_user_vidmem[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + current_pcb()->pid + 2;
     }
-
-    /* **************************************************
-     * *      Edits the property of user-level VM       *
-     * ************************************************** 
-     * * - present bit
-     * * - enables user-level
-     * * - enables user to write ^_^
-     * ************************************************** */
-    user_video_memory_pt[VIDEO_MEMORY_PTE].present = 1;
-    user_video_memory_pt[VIDEO_MEMORY_PTE].user_supervisor = 1;
-    user_video_memory_pt[VIDEO_MEMORY_PTE].read_write = 1;
-
-
-    /* **************************************************
-     * *       ALSO ASSIGN PDE for user-level VM        *
-     * ************************************************** 
-     * * - present bit
-     * * - enables user-level
-     * * - enables user to write ^_^
-     * * - page address --> subtable
-     * ************************************************** */
-    page_directory[VIDEO_MEMORY_PTE].KB.present = 1;
-    page_directory[VIDEO_MEMORY_PTE].KB.user_supervisor = 1;
-    page_directory[VIDEO_MEMORY_PTE].KB.read_write = 1;
-    page_directory[VIDEO_MEMORY_PTE].KB.page_size = 0;          /* we need one subpage */
-    page_directory[VIDEO_MEMORY_PTE].KB.page_table_base_address = ((uint32_t)user_video_memory_pt >> 12);
 
     /* assigns page address */
     *screen_start = (uint8_t*)((VIDEO_MEMORY_PTE << 22) | (VIDEO_MEMORY_PTE << 12));
+
+    asm volatile (
+        "movl %%cr3, %%eax\n"
+        "movl %%eax, %%cr3\n"
+        :
+        :
+        : "%eax"
+    );
 
     return 0; /* succeed */
 }

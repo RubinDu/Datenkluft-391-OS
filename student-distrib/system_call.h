@@ -29,6 +29,7 @@ typedef struct pcb {
     uint32_t eebp;
     uint32_t ebp;
     uint32_t esp0;
+    uint32_t vidmap;
     char args[READBUF_SIZE];
 }pcb_t;
 

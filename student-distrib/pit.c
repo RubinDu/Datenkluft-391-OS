@@ -54,8 +54,10 @@ void pit_handler() {
 
     if (next_terminal == *get_active_terminal()) {                              /* show the content */
         page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE;
+        page_table_user_vidmem[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE;
     } else {                                                                    /* don't need to show, but need to update */
         page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + next_terminal + 2;
+        page_table_user_vidmem[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + next_terminal + 2;
     }
 
     sync_terminal();    
@@ -67,6 +69,7 @@ void pit_handler() {
     next = GET_PCB(get_terminal(next_terminal)->pid);
 
     page_directory[USER_ENTRY].MB.page_base_address = 2 + next->pid;
+    page_table_user_vidmem[VIDEO_MEMORY_PTE].present = next->vidmap;
 
     tss.esp0=next->esp0;
 

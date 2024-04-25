@@ -23,6 +23,7 @@
 
 pde_t page_directory[PAGE_DIRECTORY_COUNT] __attribute__((aligned(PAGING_ALIGNMENT)));
 pte_t page_table[PAGE_TABLE_COUNT] __attribute__((aligned(PAGING_ALIGNMENT)));
+pte_t page_table_user_vidmem[PAGE_TABLE_COUNT] __attribute__((aligned(PAGING_ALIGNMENT)));
 
 /* initialize the paging configuration of x86 */
 void paging_init();

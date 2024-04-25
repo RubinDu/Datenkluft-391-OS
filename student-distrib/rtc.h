@@ -21,11 +21,10 @@
 #define MIN_FREQUENCY (0x8000 >> (MAX_RATE - 1)) /* 2 Hz */
 #define MAX_FREQUENCY (0x8000 >> (MIN_RATE - 1)) /* 512 Hz*/
 
-struct rtc_info_t {
-    volatile int32_t enabled; /* 1 if rtc is enabled, 0 otherwise */
-    volatile int32_t current; /* the current progress to a milestone */
-    volatile int32_t frequency; /* how many interrupts a logical rtc interrupt should occur */
-};
+typedef struct {
+    volatile int32_t current;   /* the current progress to a milestone */
+    volatile int32_t rate;      /* how many interrupts a logical rtc interrupt should occur */
+} rtc_info_t;
 
 /* initializes the rtc driver */
 void rtc_init();

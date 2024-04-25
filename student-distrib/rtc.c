@@ -1,10 +1,10 @@
 #include "rtc.h"
 #include "system_call.h"
 
-struct rtc_info_t rtc_info = {
-    .enabled = 0,
-    .current = 0,
-    .frequency = MAX_FREQUENCY / MIN_FREQUENCY,
+rtc_info_t rtc_info[3] = {
+    {.current = 0, .rate = MAX_FREQUENCY / MIN_FREQUENCY},
+    {.current = 0, .rate = MAX_FREQUENCY / MIN_FREQUENCY},
+    {.current = 0, .rate = MAX_FREQUENCY / MIN_FREQUENCY},
 };
 
 /*
@@ -24,7 +24,6 @@ void rtc_init(){
     enable_irq(RTC_IRQ);
     sti();
     rtc_set_rate(MIN_RATE); /* set the maximum acceptable rate, corresponding to 1024 Hz */
-    // rtc_info.enabled = 0;   /* rtc is logically disabled at first */
 }
 
 /*
@@ -39,13 +38,14 @@ void rtc_handler(){
     cli();
     outb(REG_C, RTC_COMMAND); /* throw away the value, or it would continue waiting */
     inb(RTC_DATA);
-    // if (rtc_info.enabled) { /* rtc must be enabled */
-    if (rtc_info.current <= 1) { /* logical interrupt occurred, we need to reset */
-        rtc_info.current = rtc_info.frequency;
-    } else { /* interrupt occurred, logical interrupt not occurred */
-        --rtc_info.current;
+    
+    rtc_info_t *info = rtc_info + *get_current_terminal();
+    if (info->current <= 1) {
+        info->current = info->rate;
+    } else {
+        --info->current;
     }
-    // }
+
     send_eoi(RTC_IRQ);
     sti();
 }
@@ -81,8 +81,8 @@ int32_t rtc_set_rate(int32_t rate){
  * SIDE EFFECTS: If another rtc is already open, this would reset the frequency
  */
 int32_t rtc_open(const uint8_t* filename){
-    // rtc_info.enabled = 1; /* we enable the rtc interrupt, then start counting ^_^ */
-    rtc_info.frequency = MAX_FREQUENCY / MIN_FREQUENCY;
+    rtc_info_t *info = rtc_info + *get_current_terminal();
+    info->current = info->rate = MAX_FREQUENCY / MIN_FREQUENCY;
     return 0;
 }
 
@@ -95,8 +95,8 @@ int32_t rtc_open(const uint8_t* filename){
  * SIDE EFFECTS: none
  */
 int32_t rtc_close(int32_t fd){
-    // rtc_info.enabled = 0; /* we disable the rtc */
-    rtc_info.frequency = MAX_FREQUENCY / MIN_FREQUENCY;
+    rtc_info_t *info = rtc_info + *get_current_terminal();
+    info->rate = 0;
     return 0;
 }
 
@@ -120,7 +120,10 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes){
         || (frequency & (frequency - 1))) { /* not power of 2 */
         return -1;
     }
-    rtc_info.current = rtc_info.frequency = (MAX_FREQUENCY / frequency); /* reassign the frequency */
+    
+    rtc_info_t *info = rtc_info + *get_current_terminal();
+    info->current = info->rate = MAX_FREQUENCY / frequency;
+
     return 0;
 }
 
@@ -135,10 +138,10 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes){
  * SIDE EFFECTS: none
  */
 int32_t rtc_read(int32_t fd, void* buf, int32_t nbytes){
+    rtc_info_t* info = rtc_info + *get_current_terminal();
     while (1) {
-        /* to return, rtc should be enabled, and the current counter should be zero */
-        if (rtc_info.current == 1) {
-            --rtc_info.current;
+        if (info->current == 1) {
+            --info->current;
             return 0;
         }
     }
