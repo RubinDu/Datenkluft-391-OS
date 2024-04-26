@@ -159,7 +159,7 @@ int32_t execute(const uint8_t* command){
             break;
 
     if (pid == MAX_TASKS) /* cannot handle it */
-        return -1;
+        return 0;
 
 
     /* **************************************************
@@ -210,19 +210,6 @@ int32_t execute(const uint8_t* command){
 
     tss.esp0 = KSTACK_START - KSTACK_SIZE * pid;
     tss.ss0 = KERNEL_DS;
-
-    //for (i = 0; i < NUM_TERMINAL; i++)
-    //if (get_terminal(*get_current_terminal())->pid == -1){
-    //    get_terminal(*get_current_terminal())->pid = pid;
-    //    goto found;
-    //}
-//
-    //for (i = 0; i < NUM_TERMINAL; i++)
-    //    if (get_terminal(i)->pid == current_pcb()->pid){
-    //        get_terminal(i)->pid = pid;
-    //        break;
-    //    }
-    //found:
 
     get_terminal(*get_current_terminal())->pid = pid;
 
