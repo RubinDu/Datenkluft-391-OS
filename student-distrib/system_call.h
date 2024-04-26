@@ -30,6 +30,10 @@ typedef struct pcb {
     uint32_t ebp;
     uint32_t esp0;
     uint32_t vidmap;
+    uint8_t rtc;
+    uint32_t rtc_det;
+    uint32_t rtc_curr;
+    uint32_t rtc_rate;
     char args[READBUF_SIZE];
 }pcb_t;
 

@@ -184,7 +184,7 @@ void entry(unsigned long magic, unsigned long addr) {
     get_terminal(1)->idle = 1;
     get_terminal(2)->idle = 1;
     *get_current_terminal()=2;
-    pit_init(100);
+    pit_init(391);
     pit_handler();
 
     /* Spin (nicely, so we don't chew up cycles) */

@@ -24,6 +24,7 @@ int32_t halt(uint8_t status){
      * **************************************************/
     pcb->present = 0;
     pcb->vidmap = 0;
+    pcb->rtc = 0;
     get_terminal(*get_active_terminal())->halt = 0;
 
     for (i = 0; i < MAX_FILES; ++i) {
@@ -328,6 +329,10 @@ int32_t open(const uint8_t* filename){
                     break;
                 default:
                     break;
+            }
+            if (curr_pcb->fd[i].file_ops->open(filename)) {
+                curr_pcb->fd[i].flags = 0;
+                return 0;
             }
             return i;                                   /* returns the fd */
         }

@@ -39,6 +39,8 @@ void pit_handler() {
     //} else {
     //    next_pid = next_terminal;                       /* the terminal is idle */
     //}
+
+    // cli();
     int current_terminal = *get_current_terminal();
     int next_terminal = (*get_current_terminal()+1)%3;
     pcb_t *current = GET_PCB(get_terminal(current_terminal)->pid);
@@ -79,7 +81,7 @@ void pit_handler() {
         "movl %%ecx, %%cr3\n"
 
         "movl %0, %%ebp\n"       /* set new EBP, go to that kernel stack and halt*/
-
+        // "sti\n"
         "leave\n"               
         :
         : "r"(next->ebp)
@@ -92,8 +94,8 @@ void pit_handler() {
     asm volatile (
         "movl %%cr3, %%ecx\n"       /* flush the TLB*/
         "movl %%ecx, %%cr3\n"
-
         "movl %0, %%ebp\n"       /* set new EBP, used by return */
+        // "sti\n"
 
         "leave\n" 
         "ret\n" 
