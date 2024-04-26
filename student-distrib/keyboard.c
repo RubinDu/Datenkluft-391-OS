@@ -5,6 +5,7 @@
 #include "system_call.h"
 #include "x86_desc.h"
 #include "scheduling.h"
+#include "pit.h"
 
 static char sc=0;                               //Scan char buffer
 static char lshift = 0;        
@@ -112,7 +113,6 @@ void keyboard_handler(){
         alt = 0;
         break;
     default:
-        if (sc < KEYS_SIZE && keys[(uint32_t)sc]){
             if (ctrl){
                 switch (sc){
                 case 0x26:      //Ctrl + L
@@ -130,27 +130,21 @@ void keyboard_handler(){
                 switch (sc){
                 case 0x3B:      //Alt + F1
                     switch_terminal(0);
+                    pit_handler();
                     break;
                 case 0x3C:      //Alt + F2
                     switch_terminal(1);
+                    pit_handler();
                     break;
                 case 0x3D:      //Alt + F3
                     switch_terminal(2);
-                    break;
-                case 0x2:      //Somehow my computer can't intercept Alt + FX
-                    switch_terminal(0);
-                    break;
-                case 0x3:
-                    switch_terminal(1);
-                    break;
-                case 0x4:
-                    switch_terminal(2);
+                    pit_handler();
                     break;
                 default:
                     break;
                 }
             }
-            else{
+            else if (sc < KEYS_SIZE && keys[(uint32_t)sc]){
                 az=keys[(uint32_t)sc] >= 'a' && keys[(uint32_t)sc] <= 'z';      //Check if the key pressed is an alphabet
                 if ((az&&(!(lshift||rshift)!=!cap))||(!az&&(lshift||rshift))){    //If alphabet, check if only one of shift and cap is active. If not, check if shift is active
                     if (active_terminal->num_echoed<READBUF_SIZE-1)                              //If buffer isn't full, put character into buffer
@@ -164,7 +158,6 @@ void keyboard_handler(){
                 }
                 active_terminal->num_echoed++;
             }
-        }
         break;
     }
     send_eoi(KEYBOARD_IRQ);      //Send end of interrupt

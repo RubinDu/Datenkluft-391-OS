@@ -579,12 +579,16 @@ void switch_terminal(int terminal_idx){
     memcpy(VIDEO+(active_terminal+2)*VIDEO_SIZE, VIDEO+VIDEO_SIZE, VIDEO_SIZE);
     memcpy(VIDEO+VIDEO_SIZE, VIDEO+(terminal_idx+2)*VIDEO_SIZE, VIDEO_SIZE);
 
-    if (current_terminal==active_terminal){
-        page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + current_terminal + 2;
-        page_table_user_vidmem[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + current_terminal + 2;
-    }
-
     active_terminal = terminal_idx;
+
+    //if (current_terminal==active_terminal){
+    //    page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE;
+    //    page_table_user_vidmem[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE;
+    //}
+    //else{
+    //    page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + current_terminal + 2;
+    //    page_table_user_vidmem[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + current_terminal + 2;
+    //}
 
     update_cursor();
 }
