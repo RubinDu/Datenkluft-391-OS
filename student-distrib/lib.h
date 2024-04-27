@@ -31,8 +31,8 @@ void update_cursor();
 void switch_terminal(int terminal_idx);
 
 terminal_t* get_terminal(uint32_t terminal_idx);
-int* get_active_terminal();
-int* get_current_terminal();
+uint32_t* get_active_terminal();
+uint32_t* get_current_terminal();
 void sync_terminal();
 
 /* Userspace address-check functions */

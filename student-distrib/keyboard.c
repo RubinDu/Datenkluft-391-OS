@@ -4,7 +4,6 @@
 #include "terminal.h"
 #include "system_call.h"
 #include "x86_desc.h"
-#include "scheduling.h"
 #include "pit.h"
 
 static char sc=0;                               //Scan char buffer
@@ -128,15 +127,15 @@ void keyboard_handler(){
             else if (alt)
             {
                 switch (sc){
-                case 0x3B:      //Alt + F1
+                case 0x3B:          //Alt + F1
                     switch_terminal(0);
-                    pit_handler();
+                    pit_handler();  //Force a context switch to ensure paging isn't going to be messed up by a second switch, and also runs smoother
                     break;
-                case 0x3C:      //Alt + F2
+                case 0x3C:          //Alt + F2
                     switch_terminal(1);
                     pit_handler();
                     break;
-                case 0x3D:      //Alt + F3
+                case 0x3D:          //Alt + F3
                     switch_terminal(2);
                     pit_handler();
                     break;

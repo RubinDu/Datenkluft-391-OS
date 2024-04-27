@@ -229,10 +229,14 @@ void putc(uint8_t c) {
     update_cursor();  // Update the cursor position
 }
 
+/* void echo(uint8_t c);
+ * Inputs: uint_8* c = character to print
+ * Return Value: void
+ *  Function: Output a character to the console of the active terminal regardless of current process */
 void echo (uint8_t c){
-    if (current_terminal==active_terminal)
+    if (current_terminal==active_terminal)      // If the terminal is active, print the character
         putc(c);
-    else{
+    else{                                       // If the terminal is not active, temporarily change cursor position and video memory address and print and then switch back
         int cache_x = screen_x, cache_y = screen_y;
         screen_x = terminals[active_terminal].cx;
         screen_y = terminals[active_terminal].cy;
@@ -572,42 +576,57 @@ void update_cursor(){
 	outb((uint8_t) ((pos >> 8) & 0xFF), 0x3D5);
 }
 
+/* void switch_terminal(int terminal_idx)
+ * Inputs: int terminal_idx: index of the terminal to switch to
+ * Return Value: void
+ * Side effect: Moves video data to corresponding terminal video memory, updates cursor position
+ * Function: Switch to display corresponding terminal */
 void switch_terminal(int terminal_idx){
-    if (terminal_idx==active_terminal)
+    if (terminal_idx==active_terminal)      // If the terminal is already active, do nothing
         return;
 
-    memcpy(VIDEO+(active_terminal+2)*VIDEO_SIZE, VIDEO+VIDEO_SIZE, VIDEO_SIZE);
-    memcpy(VIDEO+VIDEO_SIZE, VIDEO+(terminal_idx+2)*VIDEO_SIZE, VIDEO_SIZE);
+    memcpy((void*)VIDEO+(active_terminal+2)*VIDEO_SIZE, (void*)VIDEO+VIDEO_SIZE, VIDEO_SIZE);   // Move the video data to the corresponding terminal video memory
+    memcpy((void*)VIDEO+VIDEO_SIZE, (void*)VIDEO+(terminal_idx+2)*VIDEO_SIZE, VIDEO_SIZE);
 
-    active_terminal = terminal_idx;
-
-    //if (current_terminal==active_terminal){
-    //    page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE;
-    //    page_table_user_vidmem[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE;
-    //}
-    //else{
-    //    page_table[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + current_terminal + 2;
-    //    page_table_user_vidmem[VIDEO_MEMORY_PTE].page_base_address = VIDEO_MEMORY_PTE + current_terminal + 2;
-    //}
-
+    active_terminal = terminal_idx;         // Update the active terminal
     update_cursor();
 }
 
+/* terminal_t* get_terminal(uint32_t terminal_idx)
+ * Inputs: int terminal_idx: index of the terminal
+ * Return Value: pointer to the terminal struct
+ * Side effect: none
+ * Function: let other files access or modify static terminal array */
 terminal_t* get_terminal(uint32_t terminal_idx){
     return &terminals[terminal_idx];
 }
 
-int* get_active_terminal(){
+/* uint32_t get_active_terminal()
+ * Inputs: none
+ * Return Value: index of the active terminal
+ * Side effect: none
+ * Function: let other files access or modify static active terminal */
+uint32_t* get_active_terminal(){
     return &active_terminal;
 }
 
-int* get_current_terminal(){
+/* int get_current_terminal()
+ * Inputs: none
+ * Return Value: index of the current terminal
+ * Side effect: none
+ * Function: let other files access or modify static current terminal */
+uint32_t* get_current_terminal(){
     return &current_terminal;
 }
 
+/* void sync_terminal()
+ * Inputs: none
+ * Return Value: none
+ * Side effect: sync the cursor position with the terminal
+ * Function: sync the cursor position with the terminal */
 void sync_terminal(){
-    int next_terminal = (current_terminal+1) % 3;
-    terminals[current_terminal].cx = screen_x;
+    int next_terminal = (current_terminal+1) % 3;   // Get the next terminal
+    terminals[current_terminal].cx = screen_x;      // Store current terminal cursor position and replace with next terminal cursor position
     terminals[current_terminal].cy = screen_y;
     screen_x = terminals[next_terminal].cx;
     screen_y = terminals[next_terminal].cy;

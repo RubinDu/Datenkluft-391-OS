@@ -15,7 +15,6 @@
 #include "paging.h"
 #include "filesys.h"
 #include "system_call.h"
-#include "scheduling.h"
 
 #define RUN_TESTS 1
 
@@ -175,8 +174,8 @@ void entry(unsigned long magic, unsigned long addr) {
 // #endif
     /* Execute the first program ("shell") ... */
     clear();
-    // execute((uint8_t*)"           shell   ");
-    //initiate_shells();
+    
+    //initiate terminals;
     get_terminal(0)->pid = -1;
     get_terminal(1)->pid = -1;
     get_terminal(2)->pid = -1;
@@ -184,6 +183,8 @@ void entry(unsigned long magic, unsigned long addr) {
     get_terminal(1)->idle = 1;
     get_terminal(2)->idle = 1;
     *get_current_terminal()=2;
+
+    //Initialize PIT and force a context switch to start all shells
     pit_init(391);
     pit_handler();
 

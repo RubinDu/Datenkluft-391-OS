@@ -100,3 +100,35 @@ Author: Shanbo Zhang
 Description: Page fault after creating user-level page for video memory
 Location: system_call.c
 Fix: When we need to create a pte for video memory, we need to make a pde to points to pdes, and assign one of them to 0xB8000, the memory address of video meory. At this time, both pte and pde need to be at user level and be enabled users to write. I forgot to assign pde at first, and it runs after I change these levels.
+
+CP5 Bugs
+
+Author: Rubin Du
+Description: Scheduler can initialize multiple shell and assign them to correct terminals but it can't switch between processes
+Location: pit.c
+Fix: C return isn't exactly similar to leave ret, where it will first pop all local variable and then use esp as ebp. However, in our design we think esp is redundant and we didn't use them for scheduling as well as exec/halt. It's working correct once we switched to leave ret.
+
+Author: Rubin Du
+Description: Halt results in page fault for all processes
+Location: system_call.c
+Fix: Have to use seperate ebp for scheduler and halt, which halt's ebp have to be assigned as processes's ebp when executing it, differnet from scheduler's ebp. So now halt can correctly return to the end of exec and use data stored on stack to go back.
+
+Author: Rubin Du
+Description: Typing when multiple terminals enabled is lagging and doesn't go where cursor is currectly is.
+Location: lib.c
+Fix: Have to update cursor and sync terminal variables like screen_x and screen_y when scheduler is called, asides from when switching terminal.
+
+Author: Rubin Du
+Description: Pressing return and then switch terminal results in page fault
+Location: terminal.c
+Fix: Have to track read states of all terminals instead of only the one appearing on the screen, since doing so will mark all as read completed instead of the correct one
+
+Author: Rubin Du
+Description: Ctrl+c will halt processes randomly and only when that process is on screen
+Location: keyboard.c, pit.c
+Fix: Can't use an interruptible while loop in keyboard to halt desginated process, since the eip will be differnet for differnet process so the correct one probabily won't be in that loop. Have to create a new flag which scheduler will check and determines whether next process needs to halt.
+
+Author: Rubin Du
+Description: Spamming terminal switch when a process is rapidly writing to the screen will sometimes results in writing to incorrect terminal.
+Location: keyboard.c, lib.c
+Fix: switching twice before scheduling happens will mess up paging. Fixed by forcing scheduling immediately after terminal for proper and synchronized page assignment.

@@ -1,7 +1,6 @@
 #include "pit.h"
 #include "common_asm_link.h"
 #include "i8259.h"
-#include "scheduling.h"
 
 #define PIT_FREQUENCY 1193182
 #define PIT_SQUARE_MODE 0x36
@@ -11,6 +10,11 @@
 #define PIT_CHANNEL_2 0x42
 #define PIT_COMMAND 0x43
 
+/* void pit_init(uint16_t frequency)
+ * Inputs: uint16_t frequency: PIT frequency in HZ
+ * Return Value: none
+ * Side effect: Initialize the PIT with the given frequency
+ * Function: Enable PIT for scheduling */
 void pit_init(uint16_t frequency) {
     uint16_t param = PIT_FREQUENCY / frequency;
 
@@ -21,26 +25,13 @@ void pit_init(uint16_t frequency) {
     enable_irq(0);                                          /* enable the interrupt 0x20 in PIC */
 }
 
+/* void pit_handler()
+ * Inputs: none
+ * Return Value: none
+ * Side effect: Switch the currently running process
+ * Function: Handle the PIT interrupt and schedule processes in a round robin fashion */
 void pit_handler() {
     send_eoi(0);            /* send eoi before handling it */
-    
-    //struct pcb* current = current_pcb();
-    //uint32_t current_pid = current->pid;
-    //if (current->pid >= NUM_TERMINAL) {             /* program is running on the terminal */
-    //    current_terminal = current->parent->pid;    /* the terminal is the parent */
-    //} else {
-    //    current_terminal = current_pid;             /* the terminal is idle */
-    //}
-//
-    //uint32_t next_terminal = (current_terminal + 1) % 3;
-    //uint32_t next_pid;
-    //if (terminals[next_terminal].pid >= NUM_TERMINAL) { /* the terminal is running a program*/
-    //    next_pid = terminals[next_terminal].pid;
-    //} else {
-    //    next_pid = next_terminal;                       /* the terminal is idle */
-    //}
-
-    // cli();
     int current_terminal = *get_current_terminal();
     int next_terminal = (*get_current_terminal()+1)%3;
     pcb_t *current = GET_PCB(get_terminal(current_terminal)->pid);

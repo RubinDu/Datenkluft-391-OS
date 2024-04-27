@@ -34,7 +34,7 @@ int32_t halt(uint8_t status){
     if (pcb->pid < 3) { /* if exit the shell, recreate it ^-^ */
         pcb->present = 0;
         execute((uint8_t*)"shell");
-        return;
+        return 0;
     }
     
     get_terminal(*get_current_terminal())->pid = current_pcb()->parent->pid;
@@ -387,8 +387,6 @@ int32_t vidmap(uint8_t** screen_start) {
         || ((uint32_t)(screen_start) >> 22) != USER_ENTRY) {
         return -1;
     }
-
-    int i;
 
     current_pcb()->vidmap = 1;
     page_table_user_vidmem[VIDEO_MEMORY_PTE].present = 1;
