@@ -39,25 +39,14 @@ void rtc_handler(){
     inb(RTC_DATA);
     
     int i;
-    // rtc_info_t *info;
-    // for (i = 0, info = rtc_info; i <= 2; ++i, ++info) {
-    //     if (!info->enabled) {
-    //         continue;
-    //     }
-    //     if (info->current <= 1) {
-    //         info->current = info->rate;
-    //     } else {
-    //         --info->current;
-    //     }
-    // }
-
     pcb_t *pcb;
     for (i = 3, pcb = GET_PCB(i); i < 6; ++i, pcb = GET_PCB(i)) {
+        /* begin if the process exists AND the process has an RTC AND the rtc has not been triggered */
         if (pcb->present && pcb->rtc && !pcb->rtc_det) {
             if (pcb->rtc_curr <= 1) {
-                pcb->rtc_det = 1;
+                pcb->rtc_det = 1;   /* time is up, detect an RTC! */
             } else {
-                --pcb->rtc_curr;
+                --pcb->rtc_curr;    /* normal decrement */
             }
         }
     }
@@ -97,7 +86,7 @@ int32_t rtc_set_rate(int32_t rate){
  */
 int32_t rtc_open(const uint8_t* filename){
     pcb_t *pcb = current_pcb();
-    pcb->rtc = 1;
+    pcb->rtc = 1;       /* set the flag  */
     pcb->rtc_curr = pcb->rtc_rate = MAX_FREQUENCY / MIN_FREQUENCY;
     return 0;
 }
@@ -112,7 +101,7 @@ int32_t rtc_open(const uint8_t* filename){
  */
 int32_t rtc_close(int32_t fd){
     pcb_t *pcb = current_pcb();
-    pcb->rtc = 0;
+    pcb->rtc = 0;       /* set the flag back */
     return 0;
 }
 
@@ -139,15 +128,9 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes){
     
     pcb_t *pcb = current_pcb();
     if (!pcb->rtc) {
-        return -1;
+        return -1;      /* process doesn't have an rtc */
     }
     pcb->rtc_curr = pcb->rtc_rate = MAX_FREQUENCY / frequency;
-
-    // rtc_info_t *info = rtc_info + *get_current_terminal();
-    // if (info->enabled == 0) {
-    //     return -1;
-    // }
-    // info->current = info->rate = MAX_FREQUENCY / frequency;
 
     return 0;
 }
@@ -164,10 +147,13 @@ int32_t rtc_write(int32_t fd, const void* buf, int32_t nbytes){
  */
 int32_t rtc_read(int32_t fd, void* buf, int32_t nbytes){
     pcb_t *pcb = current_pcb();
+    if (!pcb->rtc) {
+        return -1;  /* doesn't own */
+    }
     while (0xECE391) {
-        // if (info->enabled == 1 && info->current == 1) {
-        if (pcb->rtc == 1 && pcb->rtc_det == 1) {
-            pcb->rtc_det = 0;
+        /* the process has an rtc, and it is detected ^_^ */
+        if (pcb->rtc_det == 1) {
+            pcb->rtc_det = 0;       /* start wait for another */
             pcb->rtc_curr = pcb->rtc_rate;
             return 0;
         }
