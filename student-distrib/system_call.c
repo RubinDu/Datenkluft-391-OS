@@ -158,8 +158,10 @@ int32_t execute(const uint8_t* command){
         if (!(GET_PCB(pid)->present))
             break;
 
-    if (pid == MAX_TASKS) /* cannot handle it */
+    if (pid == MAX_TASKS) {/* cannot handle it */
+        printf("TOO MUCH PROCESSES!\n");
         return 0;
+    }
 
 
     /* **************************************************
