@@ -132,3 +132,8 @@ Author: Rubin Du
 Description: Spamming terminal switch when a process is rapidly writing to the screen will sometimes results in writing to incorrect terminal.
 Location: keyboard.c, lib.c
 Fix: switching twice before scheduling happens will mess up paging. Fixed by forcing scheduling immediately after terminal for proper and synchronized page assignment.
+
+Author: Shanbo Zhang
+Description: Programs requiring RTC runs much slower than desired.
+Location: rtc.c
+Reasons & Fix: the rtc might hit when it is not active, but rtc_handler restart another iteration. By adding a flag to check if rtc is detected, we fix this problem, but with some minor error.
