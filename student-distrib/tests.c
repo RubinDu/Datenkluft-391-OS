@@ -6,6 +6,7 @@
 #include "keyboard.h"
 #include "terminal.h"
 #include "filesys.h"
+#include "malloc.h"
 
 #define PASS 1
 #define FAIL 0
@@ -416,7 +417,6 @@ int file_read_test(uint8_t* filename) {
 /* Checkpoint 4 tests */
 /* Checkpoint 5 tests */
 
-
 /* Test suite entry point */
 void launch_tests(){
 	// TEST_OUTPUT("idt_test", idt_test());
@@ -452,6 +452,27 @@ void launch_tests(){
 	// TEST_OUTPUT("RTC Write Input Test", rtc_write_test());
 	// TEST_OUTPUT("RTC Driver Test", rtc_driver_test_timer());
 	// TEST_OUTPUT("RTC Driver Test", rtc_driver_test('0'));
+
+	void *zero = malloc(0);
+	TEST_OUTPUT("zero-size memory", !zero);
 	
-	while (1); //freezes the kernel so we can see the output
+	void *small = malloc(16);
+	TEST_OUTPUT("small-size memory", small);
+	void *has_not_padding = realloc(small, 32);
+	TEST_OUTPUT("small-size memory realloc (free blocks behind)", has_not_padding == small);
+	void *padding = malloc(128);
+	void *has_padding = realloc(small, 64);
+	TEST_OUTPUT("small-size memory realloc (no free blocks behind)", has_padding != small);
+	free(has_padding);
+	free(padding);
+
+	void *big = malloc(0xECE391);
+	TEST_OUTPUT("big-size memory", big);
+	free(big);
+
+	void *too_big = malloc(0xECEB3026);
+	TEST_OUTPUT("too-big-size memory", !too_big);
+	free(too_big);
+
+	// while (1); //freezes the kernel so we can see the output
 }

@@ -12,6 +12,8 @@ void *malloc(uint32_t size);
 
 void *calloc(uint32_t each, uint32_t count);
 
+void *realloc(void *ptr, uint32_t new_size);
+
 void free(void *ptr);
 
 #endif

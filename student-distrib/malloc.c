@@ -1,6 +1,6 @@
 #include "malloc.h"
 
-#define ALIGNED_SIZE(init_size) ((init_size & 0xFFFFFF80) + 128)
+#define ALIGNED_SIZE(init_size) ((init_size + 3) & ~0x03)
 #define RESERVED_SIZE(size) ((size &0xFF))
 
 #define MIN_SIZE 128
@@ -72,6 +72,41 @@ void *malloc(uint32_t size) {
 
 void *calloc(uint32_t each, uint32_t count) {
     return malloc(each * count);
+}
+
+void *realloc(void *ptr, uint32_t new_size) {
+    if (!ptr) {                                 /* create new */
+        return malloc(new_size);
+    } else if (new_size == 0) {                 /* no longer need */
+        free(ptr);
+        return NULL;
+    }
+
+    block_t *cor = (block_t *)(ptr) - 1, *curr;
+    if (cor->size - sizeof(block_t) > new_size) {
+        return ptr;                             /* shrink it? NO!!! */
+    }
+    for (curr = blocks; curr; curr = curr->next) {
+        if (curr == (block_t *)((unsigned char *)cor + cor->size)       /* free blocks just after the block */
+            && curr->size > new_size + sizeof(block_t) - cor->size) {                     /* free block is large enough */
+            if (curr->prev) {
+                curr->prev->next = curr->next;
+            }
+            if (curr->next) {
+                curr->next->prev = curr->prev;
+            }
+            cor->size = new_size + sizeof(block_t);
+
+            return ptr;
+        }
+        break; /* we can't enlarge it through two non-adjacent buffer */
+    }
+
+    /* cannot find it, free and reallocate it is the only solution */
+    void *new_ptr = malloc(new_size);
+    memcpy(new_ptr, ptr, cor->size - sizeof(block_t));
+    free(ptr);
+    return new_ptr;
 }
 
 void free(void *ptr) {

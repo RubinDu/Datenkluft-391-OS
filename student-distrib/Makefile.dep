@@ -1,0 +1,27 @@
+boot.o: boot.S multiboot.h x86_desc.h types.h
+common_asm_link.o: common_asm_link.S common_asm_link.h
+x86_desc.o: x86_desc.S x86_desc.h types.h
+filesys.o: filesys.c filesys.h lib.h types.h x86_desc.h system_call.h \
+  paging.h keyboard.h rtc.h i8259.h terminal.h
+i8259.o: i8259.c i8259.h types.h lib.h x86_desc.h
+idt.o: idt.c idt.h x86_desc.h types.h lib.h common_asm_link.h keyboard.h \
+  rtc.h i8259.h system_call.h paging.h terminal.h filesys.h
+kernel.o: kernel.c multiboot.h types.h x86_desc.h lib.h i8259.h debug.h \
+  tests.h idt.h rtc.h pit.h keyboard.h paging.h filesys.h system_call.h \
+  terminal.h malloc.h
+keyboard.o: keyboard.c keyboard.h lib.h types.h x86_desc.h i8259.h \
+  terminal.h system_call.h paging.h rtc.h filesys.h pit.h
+lib.o: lib.c lib.h types.h x86_desc.h system_call.h paging.h keyboard.h \
+  rtc.h i8259.h terminal.h filesys.h
+malloc.o: malloc.c malloc.h lib.h types.h x86_desc.h
+paging.o: paging.c paging.h types.h x86_desc.h lib.h malloc.h
+pit.o: pit.c pit.h lib.h types.h x86_desc.h common_asm_link.h keyboard.h \
+  rtc.h i8259.h idt.h system_call.h paging.h terminal.h filesys.h
+rtc.o: rtc.c rtc.h types.h lib.h x86_desc.h i8259.h system_call.h \
+  paging.h keyboard.h terminal.h filesys.h
+system_call.o: system_call.c system_call.h types.h paging.h x86_desc.h \
+  keyboard.h rtc.h lib.h i8259.h terminal.h filesys.h
+terminal.o: terminal.c terminal.h types.h keyboard.h lib.h x86_desc.h \
+  system_call.h paging.h rtc.h i8259.h filesys.h
+tests.o: tests.c tests.h x86_desc.h types.h lib.h rtc.h i8259.h \
+  keyboard.h terminal.h filesys.h malloc.h

@@ -169,19 +169,10 @@ void entry(unsigned long magic, unsigned long addr) {
     printf("Enabling Interrupts\n");
     sti();
 
-    void *ptr1 = malloc(66);
-    void *ptr2 = malloc(7363);
-    void *ptr3 = malloc(9395);
-    void *ptr4 = malloc(5465);
-    free(ptr3);
-    free(ptr1);
-    free(ptr4);
-    free(ptr2);
-
-// #ifdef RUN_TESTS
-//     /* Run tests */
-//     launch_tests();
-// #endif
+#ifdef RUN_TESTS
+    /* Run tests */
+    launch_tests();
+#endif
     /* Execute the first program ("shell") ... */
     clear();
     
