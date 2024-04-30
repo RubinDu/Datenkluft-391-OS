@@ -15,6 +15,7 @@
 #include "paging.h"
 #include "filesys.h"
 #include "system_call.h"
+#include "malloc.h"
 
 #define RUN_TESTS 1
 
@@ -167,6 +168,15 @@ void entry(unsigned long magic, unsigned long addr) {
      * without showing you any output */
     printf("Enabling Interrupts\n");
     sti();
+
+    void *ptr1 = malloc(66);
+    void *ptr2 = malloc(7363);
+    void *ptr3 = malloc(9395);
+    void *ptr4 = malloc(5465);
+    free(ptr3);
+    free(ptr1);
+    free(ptr4);
+    free(ptr2);
 
 // #ifdef RUN_TESTS
 //     /* Run tests */

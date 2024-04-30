@@ -1,5 +1,6 @@
 #include "paging.h"
 #include "lib.h"
+#include "malloc.h"
 
 /**
  * void init_paging();
@@ -60,6 +61,12 @@ void paging_init() {
     page_directory[VIDEO_MEMORY_PTE].KB.read_write = 1;
     page_directory[VIDEO_MEMORY_PTE].KB.page_size = 0;          /* we need one subpage */
     page_directory[VIDEO_MEMORY_PTE].KB.page_table_base_address = ((uint32_t)page_table_user_vidmem >> 12);
+
+    for (i = 0; i < 24; ++i) { /* 0xCA000000 ~ 0xCFFFFFFF, total 24 pages */
+        page_directory[KERNEL_DYNAMIC_PTE + i].MB.present = 1;
+        page_directory[KERNEL_DYNAMIC_PTE + i].MB.read_write = 1;
+        page_directory[KERNEL_DYNAMIC_PTE + i].MB.page_base_address = (KERNEL_DYNAMIC_PHYSICAL_BASE + 1);
+    }
 
     /* **************************************************
      * *          Set Page Directory to CR3             *
