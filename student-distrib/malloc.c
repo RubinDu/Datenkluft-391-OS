@@ -16,6 +16,13 @@ struct block {
 
 block_t *blocks = NULL;
 
+/**
+ * void *malloc(uint32_t size):
+ * DESCRIPTION: allocates a data in \p size bytes
+ * INPUT: size - the size of the buffer
+ * OUTPUT: none
+ * RETURN: the allocated buffer, or NULL if failed
+ */
 void *malloc(uint32_t size) {
     if (size == 0 || size > KERNEL_DYNAMIC_CAPACITY) { /* the size is too large */
         return NULL;
@@ -70,10 +77,25 @@ void *malloc(uint32_t size) {
     return (void *)(KERNEL_DYNAMIC_BASE + sizeof(block_t));
 }
 
+/**
+ * void *calloc(uint32_t each, uint32_t count):
+ * DESCRIPTION: allocate \p count of \p each bytes
+ * INPUT: each - sizeof(T)
+ *        count - the amount of T
+ * OUTPUT: none
+ * RETURN: allocated buffer, or NULL if failed
+ */
 void *calloc(uint32_t each, uint32_t count) {
     return malloc(each * count);
 }
 
+/**
+ * void *realloc(void *ptr, uint32_t new_size)
+ * DESCRIPTION: enlarges the buffer from the original size to \p new_size
+ * INPUT: ptr - the old buffer
+ * OUTPUT: none
+ * RETURN: allocated buffer, might be different
+ */
 void *realloc(void *ptr, uint32_t new_size) {
     if (!ptr) {                                 /* create new */
         return malloc(new_size);
@@ -109,6 +131,13 @@ void *realloc(void *ptr, uint32_t new_size) {
     return new_ptr;
 }
 
+/**
+ * void free(void *ptr):
+ * DESCRIPTION: release the buffer
+ * INPUT: ptr - allocated buffer
+ * OUTPUT: none
+ * RETURN: none
+ */
 void free(void *ptr) {
     if (!ptr) {
         return;
