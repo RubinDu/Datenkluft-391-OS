@@ -71,7 +71,7 @@ void *malloc(uint32_t size) {
     blocks->prev = NULL;                        /* the first one */
     blocks->next = NULL;
     blocks = (block_t *)((unsigned char*)blocks + real_size);
-    blocks->size = (KERNEL_DYNAMIC_CAPACITY - real_size - sizeof(block_t));
+    blocks->size = (KERNEL_DYNAMIC_CAPACITY - real_size);
     blocks->prev = NULL;
     blocks->next = NULL;
     return (void *)(KERNEL_DYNAMIC_BASE + sizeof(block_t));
@@ -108,20 +108,56 @@ void *realloc(void *ptr, uint32_t new_size) {
     if (cor->size - sizeof(block_t) > new_size) {
         return ptr;                             /* shrink it? NO!!! */
     }
-    for (curr = blocks; curr; curr = curr->next) {
-        if (curr == (block_t *)((unsigned char *)cor + cor->size)       /* free blocks just after the block */
-            && curr->size > new_size + sizeof(block_t) - cor->size) {                     /* free block is large enough */
-            if (curr->prev) {
-                curr->prev->next = curr->next;
-            }
-            if (curr->next) {
-                curr->next->prev = curr->prev;
-            }
-            cor->size = new_size + sizeof(block_t);
 
+    uint32_t real_size = new_size + sizeof(block_t);
+    for (curr = blocks; curr; curr = curr->next) {
+        if (curr == (block_t *)((unsigned char *)cor + cor->size)) {    /* free blocks just after the block */
+            uint32_t extra_size = real_size - cor->size;                /* new size */
+            if (curr->size > extra_size) {
+                if (curr->size - extra_size <= sizeof(block_t)) {        /* delete this block */
+                    if (curr->prev) {
+                        curr->prev->next = curr->next;
+                    }
+                    if (curr->next) {
+                        curr->next->prev = curr->prev;
+                    }
+
+                    cor->size += (curr->size - extra_size);             /* enlarge this block */
+                } else {                                                /* shrink the block */
+                    block_t *next = (block_t *)((unsigned char*)curr + extra_size);
+                    cor->size += extra_size;
+                    next->size = (curr->size - extra_size);             /* assign the next size */
+                    next->prev = curr->prev;
+                    next->next = curr->next;
+
+                    if (curr->prev) {                                   /* create node and assign new node */
+                        curr->prev->next = next;
+                    }
+                    if (curr->next) {
+                        curr->next->prev = next;
+                    }
+
+                    if (curr == blocks) {                               /* refresh head */
+                        blocks = next;
+                    }
+                }
+            } else break;                                               /* adjacent blocks is large enough */
+            
             return ptr;
+
+            if (curr->size > extra_size) {          /* free block is large enough */
+                if (curr->prev) {
+                    curr->prev->next = curr->next;
+                }
+                if (curr->next) {
+                    curr->next->prev = curr->prev;
+                }
+                cor->size = new_size + sizeof(block_t);
+
+                return ptr;
+            } else
+                break;                              /* we can't enlarge it through two non-adjacent buffer */
         }
-        break; /* we can't enlarge it through two non-adjacent buffer */
     }
 
     /* cannot find it, free and reallocate it is the only solution */
@@ -164,5 +200,20 @@ void free(void *ptr) {
         }
     }
     
-    /* TODO: merge blocks */
+    block_t *begin, *end;
+    for (begin = cor; begin->prev && (uint32_t)begin->prev + begin->prev->size == (uint32_t)begin; begin = begin->prev);
+    for (end = cor; end->next && (uint32_t)end + end->size == (uint32_t)end->next; end = end->next);
+
+    if (begin != end) {
+        begin->size = ((uint32_t)end + end->size - (uint32_t)begin);
+        if (begin == blocks) {
+            blocks->prev = NULL;
+            blocks->next = end->next;
+        } else {
+            begin->next = end->next;
+            if (end->next) {
+                end->next->prev = begin;
+            }
+        }
+    }
 }
