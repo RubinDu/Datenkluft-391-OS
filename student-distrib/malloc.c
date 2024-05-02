@@ -201,18 +201,23 @@ void free(void *ptr) {
     }
     
     block_t *begin, *end;
-    for (begin = cor; begin->prev && (uint32_t)begin->prev + begin->prev->size == (uint32_t)begin; begin = begin->prev);
-    for (end = cor; end->next && (uint32_t)end + end->size == (uint32_t)end->next; end = end->next);
+    for (begin = cor;
+         begin->prev                                                        /* check reached the head */
+            && (uint32_t)begin->prev + begin->prev->size == (uint32_t)begin;/* check if adjacent */
+         begin = begin->prev);
+    for (end = cor;                                                         /* check reached the tail */
+         end->next && (uint32_t)end + end->size == (uint32_t)end->next;     /* check if adjacent */
+         end = end->next);
 
     if (begin != end) {
-        begin->size = ((uint32_t)end + end->size - (uint32_t)begin);
-        if (begin == blocks) {
+        begin->size = ((uint32_t)end + end->size - (uint32_t)begin);        /* merges the size */
+        if (begin == blocks) {                                              /* reached the head -> assign */
             blocks->prev = NULL;
             blocks->next = end->next;
         } else {
-            begin->next = end->next;
+            begin->next = end->next;                                        /* keep the first block */
             if (end->next) {
-                end->next->prev = begin;
+                end->next->prev = begin;                                    /* keep linked list alive */
             }
         }
     }
