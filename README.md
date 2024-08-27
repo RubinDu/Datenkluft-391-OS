@@ -1,3 +1,6 @@
+This is a forked repo from Stephen Cao's repo StephenCao422/Unix_like_OS, whom we collaborated on this project. 
+I used the wrong email on the lab's computer which registered my commits to a wrong email and I fixed that using git filter-repo in this forked repo.
+
 ACADEMIC INTEGRITY
 -----
 Please review the University of Illinois Student Code before starting,
